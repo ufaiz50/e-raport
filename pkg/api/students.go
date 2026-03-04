@@ -26,12 +26,33 @@ func NewStudentRepository(db database.Database, ctx *context.Context) *studentRe
 	return &studentRepository{DB: db, Ctx: ctx}
 }
 
+// FindStudents godoc
+// @Summary Get all students
+// @Description Get a list of all students
+// @Tags students
+// @Security ApiKeyAuth
+// @Produce json
+// @Success 200 {array} models.Student "Successfully retrieved list of students"
+// @Router /students [get]
 func (r *studentRepository) FindStudents(c *gin.Context) {
 	var students []models.Student
 	r.DB.Find(&students)
 	c.JSON(http.StatusOK, gin.H{"data": students})
 }
 
+// CreateStudent godoc
+// @Summary Create a new student
+// @Description Create a new student with kindergarten type (junior/senior)
+// @Tags students
+// @Security ApiKeyAuth
+// @Security JwtAuth
+// @Accept json
+// @Produce json
+// @Param input body models.CreateStudent true "Create student object"
+// @Success 201 {object} models.Student "Successfully created student"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 401 {string} string "Unauthorized"
+// @Router /students [post]
 func (r *studentRepository) CreateStudent(c *gin.Context) {
 	var input models.CreateStudent
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -44,6 +65,16 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": student})
 }
 
+// FindStudent godoc
+// @Summary Find a student by ID
+// @Description Get details of a student by ID
+// @Tags students
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path string true "Student ID"
+// @Success 200 {object} models.Student "Successfully retrieved student"
+// @Failure 404 {string} string "Student not found"
+// @Router /students/{id} [get]
 func (r *studentRepository) FindStudent(c *gin.Context) {
 	var student models.Student
 	if err := r.DB.Where("id = ?", c.Param("id")).First(&student).Error(); err != nil {
@@ -53,6 +84,19 @@ func (r *studentRepository) FindStudent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 
+// UpdateStudent godoc
+// @Summary Update a student by ID
+// @Description Update student details and kindergarten type (junior/senior)
+// @Tags students
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Student ID"
+// @Param input body models.UpdateStudent true "Update student object"
+// @Success 200 {object} models.Student "Successfully updated student"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 404 {string} string "Student not found"
+// @Router /students/{id} [put]
 func (r *studentRepository) UpdateStudent(c *gin.Context) {
 	var student models.Student
 	var input models.UpdateStudent
@@ -71,6 +115,16 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 
+// DeleteStudent godoc
+// @Summary Delete a student by ID
+// @Description Delete student by ID
+// @Tags students
+// @Security ApiKeyAuth
+// @Produce json
+// @Param id path string true "Student ID"
+// @Success 204 {string} string "Successfully deleted student"
+// @Failure 404 {string} string "Student not found"
+// @Router /students/{id} [delete]
 func (r *studentRepository) DeleteStudent(c *gin.Context) {
 	var student models.Student
 	if err := r.DB.Where("id = ?", c.Param("id")).First(&student).Error(); err != nil {

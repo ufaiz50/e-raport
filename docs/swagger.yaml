@@ -1,6 +1,385 @@
+swagger: '2.0'
+info:
+  description: This is a sample server celler server.
+  title: Swagger Example API
+  termsOfService: http://swagger.io/terms/
+  contact:
+    name: API Support
+    url: http://www.swagger.io/support
+    email: support@swagger.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: '1.0'
+host: localhost:8001
 basePath: /api/v1
+paths:
+  /:
+    get:
+      description: do ping
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - example
+      summary: ping example
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: string
+  /books:
+    get:
+      security:
+      - ApiKeyAuth: []
+      description: Get a list of all books with optional pagination
+      produces:
+      - application/json
+      tags:
+      - books
+      summary: Get all books with pagination
+      parameters:
+      - type: integer
+        default: 0
+        description: Offset for pagination
+        name: offset
+        in: query
+      - type: integer
+        default: 10
+        description: Limit for pagination
+        name: limit
+        in: query
+      responses:
+        '200':
+          description: Successfully retrieved list of books
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/models.Book'
+    post:
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      description: Create a new book with the given input data
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - books
+      summary: Create a new book
+      parameters:
+      - description: Create book object
+        name: input
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateBook'
+      responses:
+        '201':
+          description: Successfully created book
+          schema:
+            $ref: '#/definitions/models.Book'
+        '400':
+          description: Bad Request
+          schema:
+            type: string
+        '401':
+          description: Unauthorized
+          schema:
+            type: string
+  /books/{id}:
+    get:
+      security:
+      - ApiKeyAuth: []
+      description: Get details of a book by its ID
+      produces:
+      - application/json
+      tags:
+      - books
+      summary: Find a book by ID
+      parameters:
+      - type: string
+        description: Book ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '200':
+          description: Successfully retrieved book
+          schema:
+            $ref: '#/definitions/models.Book'
+        '404':
+          description: Book not found
+          schema:
+            type: string
+    put:
+      security:
+      - ApiKeyAuth: []
+      description: Update the book details for the given ID
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - books
+      summary: Update a book by ID
+      parameters:
+      - type: string
+        description: Book ID
+        name: id
+        in: path
+        required: true
+      - description: Update book object
+        name: input
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBook'
+      responses:
+        '200':
+          description: Successfully updated book
+          schema:
+            $ref: '#/definitions/models.Book'
+        '400':
+          description: Bad Request
+          schema:
+            type: string
+        '404':
+          description: book not found
+          schema:
+            type: string
+    delete:
+      security:
+      - ApiKeyAuth: []
+      description: Delete the book with the given ID
+      produces:
+      - application/json
+      tags:
+      - books
+      summary: Delete a book by ID
+      parameters:
+      - type: string
+        description: Book ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '204':
+          description: Successfully deleted book
+          schema:
+            type: string
+        '404':
+          description: book not found
+          schema:
+            type: string
+  /login:
+    post:
+      security:
+      - ApiKeyAuth: []
+      description: Authenticates a user using username and password, returns a JWT
+        token if successful
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - user
+      summary: Authenticate a user
+      parameters:
+      - description: User login object
+        name: user
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginUser'
+      responses:
+        '200':
+          description: JWT Token
+          schema:
+            type: string
+        '400':
+          description: Bad Request
+          schema:
+            type: string
+        '401':
+          description: Unauthorized
+          schema:
+            type: string
+        '500':
+          description: Internal Server Error
+          schema:
+            type: string
+  /register:
+    post:
+      security:
+      - ApiKeyAuth: []
+      description: Registers a new user with the given username and password
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - user
+      summary: Register a new user
+      parameters:
+      - description: User registration object
+        name: user
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginUser'
+      responses:
+        '200':
+          description: Successfully registered
+          schema:
+            type: string
+        '400':
+          description: Bad Request
+          schema:
+            type: string
+        '500':
+          description: Internal Server Error
+          schema:
+            type: string
+  /students:
+    get:
+      security:
+      - ApiKeyAuth: []
+      description: Get a list of all students
+      produces:
+      - application/json
+      tags:
+      - students
+      summary: Get all students
+      responses:
+        '200':
+          description: Successfully retrieved list of students
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/models.Student'
+    post:
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      description: Create a new student with kindergarten type (junior/senior)
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - students
+      summary: Create a new student
+      parameters:
+      - description: Create student object
+        name: input
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateStudent'
+      responses:
+        '201':
+          description: Successfully created student
+          schema:
+            $ref: '#/definitions/models.Student'
+        '400':
+          description: Bad Request
+          schema:
+            type: string
+        '401':
+          description: Unauthorized
+          schema:
+            type: string
+  /students/{id}:
+    get:
+      security:
+      - ApiKeyAuth: []
+      description: Get details of a student by ID
+      produces:
+      - application/json
+      tags:
+      - students
+      summary: Find a student by ID
+      parameters:
+      - type: string
+        description: Student ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '200':
+          description: Successfully retrieved student
+          schema:
+            $ref: '#/definitions/models.Student'
+        '404':
+          description: Student not found
+          schema:
+            type: string
+    put:
+      security:
+      - ApiKeyAuth: []
+      description: Update student details and kindergarten type (junior/senior)
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      tags:
+      - students
+      summary: Update a student by ID
+      parameters:
+      - type: string
+        description: Student ID
+        name: id
+        in: path
+        required: true
+      - description: Update student object
+        name: input
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateStudent'
+      responses:
+        '200':
+          description: Successfully updated student
+          schema:
+            $ref: '#/definitions/models.Student'
+        '400':
+          description: Bad Request
+          schema:
+            type: string
+        '404':
+          description: Student not found
+          schema:
+            type: string
+    delete:
+      security:
+      - ApiKeyAuth: []
+      description: Delete student by ID
+      produces:
+      - application/json
+      tags:
+      - students
+      summary: Delete a student by ID
+      parameters:
+      - type: string
+        description: Student ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '204':
+          description: Successfully deleted student
+          schema:
+            type: string
+        '404':
+          description: Student not found
+          schema:
+            type: string
 definitions:
   models.Book:
+    type: object
     properties:
       author:
         type: string
@@ -12,287 +391,91 @@ definitions:
         type: string
       updated_at:
         type: string
-    type: object
   models.CreateBook:
+    type: object
+    required:
+    - author
+    - title
     properties:
       author:
         type: string
       title:
         type: string
-    required:
-    - author
-    - title
-    type: object
   models.LoginUser:
+    type: object
+    required:
+    - password
+    - username
     properties:
       password:
         type: string
       username:
         type: string
-    required:
-    - password
-    - username
-    type: object
   models.UpdateBook:
+    type: object
     properties:
       author:
         type: string
       title:
         type: string
+  models.Student:
     type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      email:
+        type: string
+      type:
+        type: string
+        enum:
+        - junior
+        - senior
+        example: junior
+      created_at:
+        type: string
+      updated_at:
+        type: string
+  models.CreateStudent:
+    type: object
+    required:
+    - name
+    - email
+    - type
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      type:
+        type: string
+        enum:
+        - junior
+        - senior
+        example: junior
+  models.UpdateStudent:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      type:
+        type: string
+        enum:
+        - junior
+        - senior
+        example: senior
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    name: X-API-Key
+    in: header
+  JwtAuth:
+    type: apiKey
+    name: Authorization
+    in: header
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
-host: localhost:8001
-info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: This is a sample server celler server.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Swagger Example API
-  version: "1.0"
-paths:
-  /:
-    get:
-      consumes:
-      - application/json
-      description: do ping
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: ping example
-      tags:
-      - example
-  /books:
-    get:
-      description: Get a list of all books with optional pagination
-      parameters:
-      - default: 0
-        description: Offset for pagination
-        in: query
-        name: offset
-        type: integer
-      - default: 10
-        description: Limit for pagination
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved list of books
-          schema:
-            items:
-              $ref: '#/definitions/models.Book'
-            type: array
-      security:
-      - ApiKeyAuth: []
-      summary: Get all books with pagination
-      tags:
-      - books
-    post:
-      consumes:
-      - application/json
-      description: Create a new book with the given input data
-      parameters:
-      - description: Create book object
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateBook'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Successfully created book
-          schema:
-            $ref: '#/definitions/models.Book'
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-        "401":
-          description: Unauthorized
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      - JwtAuth: []
-      summary: Create a new book
-      tags:
-      - books
-  /books/{id}:
-    delete:
-      description: Delete the book with the given ID
-      parameters:
-      - description: Book ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Successfully deleted book
-          schema:
-            type: string
-        "404":
-          description: book not found
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a book by ID
-      tags:
-      - books
-    get:
-      description: Get details of a book by its ID
-      parameters:
-      - description: Book ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved book
-          schema:
-            $ref: '#/definitions/models.Book'
-        "404":
-          description: Book not found
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Find a book by ID
-      tags:
-      - books
-    put:
-      consumes:
-      - application/json
-      description: Update the book details for the given ID
-      parameters:
-      - description: Book ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Update book object
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateBook'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully updated book
-          schema:
-            $ref: '#/definitions/models.Book'
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-        "404":
-          description: book not found
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Update a book by ID
-      tags:
-      - books
-  /login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticates a user using username and password, returns a JWT
-        token if successful
-      parameters:
-      - description: User login object
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.LoginUser'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: JWT Token
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-        "401":
-          description: Unauthorized
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Authenticate a user
-      tags:
-      - user
-  /register:
-    post:
-      consumes:
-      - application/json
-      description: Registers a new user with the given username and password
-      parameters:
-      - description: User registration object
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.LoginUser'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully registered
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Register a new user
-      tags:
-      - user
-securityDefinitions:
-  ApiKeyAuth:
-    in: header
-    name: X-API-Key
-    type: apiKey
-  JwtAuth:
-    in: header
-    name: Authorization
-    type: apiKey
-swagger: "2.0"
