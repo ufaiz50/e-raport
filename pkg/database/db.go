@@ -70,6 +70,7 @@ func NewDatabase() *gorm.DB {
 			time.Sleep(3 * time.Second)
 		}
 	}
+	database.AutoMigrate(&models.Student{})
 	database.AutoMigrate(&models.Book{})
 	database.AutoMigrate(&models.User{})
 

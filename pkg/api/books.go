@@ -100,6 +100,14 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 
 	// If cache missed, fetch data from the database
 	r.DB.Offset(offset).Limit(limit).Find(&books)
+	for i := range books {
+		if books[i].StudentID != nil {
+			var student models.Student
+			if err := r.DB.Where("id = ?", *books[i].StudentID).First(&student).Error(); err == nil {
+				books[i].Student = &student
+			}
+		}
+	}
 
 	// Serialize books object and store it in Redis
 	serializedBooks, err := json.Marshal(books)
@@ -142,7 +150,15 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 		return
 	}
 
-	book := models.Book{Title: input.Title, Author: input.Author}
+	if input.StudentID != nil {
+		var student models.Student
+		if err := appCtx.DB.Where("id = ?", *input.StudentID).First(&student).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "student not found"})
+			return
+		}
+	}
+
+	book := models.Book{Title: input.Title, Author: input.Author, StudentID: input.StudentID}
 
 	appCtx.DB.Create(&book)
 
@@ -176,6 +192,13 @@ func (r *bookRepository) FindBook(c *gin.Context) {
 		return
 	}
 
+	if book.StudentID != nil {
+		var student models.Student
+		if err := r.DB.Where("id = ?", *book.StudentID).First(&student).Error(); err == nil {
+			book.Student = &student
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": book})
 }
 
@@ -206,7 +229,15 @@ func (r *bookRepository) UpdateBook(c *gin.Context) {
 		return
 	}
 
-	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author})
+	if input.StudentID != nil {
+		var student models.Student
+		if err := r.DB.Where("id = ?", *input.StudentID).First(&student).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "student not found"})
+			return
+		}
+	}
+
+	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author, StudentID: input.StudentID})
 
 	c.JSON(http.StatusOK, gin.H{"data": book})
 }
