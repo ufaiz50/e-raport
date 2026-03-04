@@ -39,7 +39,7 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 		return
 	}
 
-	student := models.Student{Name: input.Name, Email: input.Email}
+	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type}
 	r.DB.Create(&student)
 	c.JSON(http.StatusCreated, gin.H{"data": student})
 }
@@ -67,7 +67,7 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 		return
 	}
 
-	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email})
+	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type})
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 

@@ -28,7 +28,7 @@ func TestCreateStudent(t *testing.T) {
 	r := gin.Default()
 	r.POST("/students", repo.CreateStudent)
 
-	input := models.CreateStudent{Name: "Umar", Email: "umar@example.com"}
+	input := models.CreateStudent{Name: "Umar", Email: "umar@example.com", Type: "junior"}
 	body, _ := json.Marshal(input)
 
 	mockDB.EXPECT().Create(gomock.Any()).DoAndReturn(func(student *models.Student) *gorm.DB {
@@ -42,6 +42,7 @@ func TestCreateStudent(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Contains(t, w.Body.String(), "umar@example.com")
+	assert.Contains(t, w.Body.String(), "junior")
 }
 
 func TestFindStudent(t *testing.T) {
@@ -56,7 +57,7 @@ func TestFindStudent(t *testing.T) {
 	r := gin.Default()
 	r.GET("/students/:id", repo.FindStudent)
 
-	expected := models.Student{ID: 1, Name: "Umar", Email: "umar@example.com"}
+	expected := models.Student{ID: 1, Name: "Umar", Email: "umar@example.com", Type: "junior"}
 
 	mockDB.EXPECT().Where("id = ?", "1").Return(mockDB)
 	mockDB.EXPECT().First(gomock.Any()).DoAndReturn(func(dest interface{}, conds ...interface{}) database.Database {
@@ -73,4 +74,5 @@ func TestFindStudent(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "umar@example.com")
+	assert.Contains(t, w.Body.String(), "junior")
 }
