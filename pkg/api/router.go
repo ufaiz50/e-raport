@@ -7,11 +7,7 @@ import (
 	"golang-rest-api-template/pkg/middleware"
 	"time"
 
-	docs "golang-rest-api-template/docs"
-
 	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 
@@ -48,7 +44,6 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 	r.Use(middleware.Cors())
 	r.Use(middleware.RateLimiter(rate.Every(1*time.Minute), 60)) // 60 requests per minute
 
-	docs.SwaggerInfo.BasePath = "/api/v1"
 	v1 := r.Group("/api/v1")
 	{
 		v1.GET("/", bookRepository.Healthcheck)
@@ -91,9 +86,8 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.POST("/login", middleware.APIKeyAuth(), userRepository.LoginHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
 	}
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.GET("/docs", ScalarDocs)
-	r.StaticFile("/openapi.yaml", "./docs/swagger.yaml")
+	r.StaticFile("/openapi.yaml", "./docs/openapi.yaml")
 
 	return r
 }

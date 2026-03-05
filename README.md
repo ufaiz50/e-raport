@@ -5,14 +5,14 @@
 
 ## Overview
 
-This repository provides a template for building a RESTful API using Go with features like JWT Authentication, rate limiting, Swagger documentation, and database operations using GORM. The application uses the Gin Gonic web framework and is containerized using Docker.
+This repository provides a template for building a RESTful API using Go with features like JWT Authentication, rate limiting, Scalar/OpenAPI documentation, and database operations using GORM. The application uses the Gin Gonic web framework and is containerized using Docker.
 
 ## Features
 
 - RESTful API endpoints for CRUD operations.
 - JWT Authentication.
 - Rate Limiting.
-- Swagger Documentation.
+- Scalar + OpenAPI Documentation.
 - PostgreSQL database integration using GORM.
 - Redis cache.
 - MongoDB for logging storage.
@@ -115,13 +115,7 @@ You can set the environment variables in the `.env` file. Here are some importan
 
 ### API Documentation
 
-The API is documented using Swagger and can be accessed at:
-
-```
-http://localhost:8001/swagger/index.html
-```
-
-Alternative API docs (Scalar UI) are available at:
+The API is documented using Scalar UI and can be accessed at:
 
 ```
 http://localhost:8001/docs
