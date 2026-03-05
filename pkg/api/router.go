@@ -66,6 +66,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.DELETE("/grades/:id", middleware.APIKeyAuth(), gradeRepository.DeleteGrade)
 
 		v1.GET("/reports/students/:student_id/print", middleware.APIKeyAuth(), reportRepository.PrintReportCard)
+		v1.GET("/reports/students/:student_id/pdf", middleware.APIKeyAuth(), reportRepository.PrintReportCardPDF)
 
 		v1.POST("/login", middleware.APIKeyAuth(), userRepository.LoginHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)

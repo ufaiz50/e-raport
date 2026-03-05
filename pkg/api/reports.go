@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jung-kurt/gofpdf"
 )
 
 type reportRepository struct {
@@ -135,32 +136,122 @@ func (r *reportRepository) PrintReportCard(c *gin.Context) {
 		return
 	}
 
+	view, statusCode, err := r.buildReportView(studentID, c)
+	if err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	var html bytes.Buffer
+	if err := reportTemplate.Execute(&html, view); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to render report template"})
+		return
+	}
+
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, html.String())
+}
+
+// PrintReportCardPDF godoc
+// @Summary Export report card as PDF
+// @Description Export ready-to-print report card PDF per student per term
+// @Tags reports
+// @Security ApiKeyAuth
+// @Produce application/pdf
+// @Param student_id path int true "Student ID"
+// @Param semester query int true "Semester"
+// @Param academic_year query string true "Academic year"
+// @Success 200 {file} binary "PDF report card"
+// @Failure 400 {string} string "Bad Request"
+// @Failure 404 {string} string "Student/report data not found"
+// @Router /reports/students/{student_id}/pdf [get]
+func (r *reportRepository) PrintReportCardPDF(c *gin.Context) {
+	studentID, err := strconv.Atoi(c.Param("student_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
+		return
+	}
+
+	view, statusCode, err := r.buildReportView(studentID, c)
+	if err != nil {
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 8, view.SchoolName)
+	pdf.Ln(7)
+	pdf.SetFont("Arial", "", 11)
+	pdf.Cell(0, 7, "Laporan Hasil Belajar Siswa")
+	pdf.Ln(10)
+
+	pdf.Cell(0, 6, "Nama: "+view.StudentName)
+	pdf.Ln(6)
+	pdf.Cell(0, 6, "Email: "+view.StudentEmail)
+	pdf.Ln(6)
+	pdf.Cell(0, 6, "Jenjang: "+view.StudentType)
+	pdf.Ln(6)
+	pdf.Cell(0, 6, fmt.Sprintf("Semester/Tahun Ajaran: %d / %s", view.Semester, view.AcademicYear))
+	pdf.Ln(10)
+
+	pdf.SetFont("Arial", "B", 10)
+	headers := []string{"No", "Mata Pelajaran", "Pengetahuan", "Keterampilan", "Nilai Akhir", "Catatan"}
+	widths := []float64{10, 50, 28, 28, 25, 49}
+	for i, h := range headers {
+		pdf.CellFormat(widths[i], 8, h, "1", 0, "C", false, 0, "")
+	}
+	pdf.Ln(-1)
+
+	pdf.SetFont("Arial", "", 10)
+	for _, row := range view.Rows {
+		pdf.CellFormat(widths[0], 8, fmt.Sprintf("%d", row.No), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(widths[1], 8, row.Subject, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(widths[2], 8, fmt.Sprintf("%.2f", row.KnowledgeScore), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(widths[3], 8, fmt.Sprintf("%.2f", row.SkillScore), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(widths[4], 8, fmt.Sprintf("%.2f", row.FinalScore), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(widths[5], 8, row.Notes, "1", 0, "L", false, 0, "")
+		pdf.Ln(-1)
+	}
+
+	pdf.SetFont("Arial", "B", 10)
+	pdf.CellFormat(widths[0]+widths[1]+widths[2]+widths[3], 8, "Rata-rata", "1", 0, "R", false, 0, "")
+	pdf.CellFormat(widths[4], 8, fmt.Sprintf("%.2f", view.Average), "1", 0, "R", false, 0, "")
+	pdf.CellFormat(widths[5], 8, "", "1", 0, "L", false, 0, "")
+
+	filename := fmt.Sprintf("raport_%d_s%d_%s.pdf", studentID, view.Semester, view.AcademicYear)
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
+
+	if err := pdf.Output(c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate pdf"})
+		return
+	}
+}
+
+func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (reportView, int, error) {
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		return reportView{}, http.StatusBadRequest, err
 	}
 
 	academicYear := c.Query("academic_year")
 	if academicYear == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "academic_year is required"})
-		return
+		return reportView{}, http.StatusBadRequest, fmt.Errorf("academic_year is required")
 	}
 
 	var student models.Student
 	if err := r.DB.Where("id = ?", studentID).First(&student).Error(); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
-		return
+		return reportView{}, http.StatusNotFound, fmt.Errorf("student not found")
 	}
 
 	var grades []models.Grade
 	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).Order("book_id asc").Find(&grades).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch report data"})
-		return
+		return reportView{}, http.StatusInternalServerError, fmt.Errorf("failed to fetch report data")
 	}
 	if len(grades) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "report data not found for this term"})
-		return
+		return reportView{}, http.StatusNotFound, fmt.Errorf("report data not found for this term")
 	}
 
 	rows := make([]reportRow, 0, len(grades))
@@ -194,12 +285,5 @@ func (r *reportRepository) PrintReportCard(c *gin.Context) {
 		HomeroomTeach: "__________________",
 	}
 
-	var html bytes.Buffer
-	if err := reportTemplate.Execute(&html, view); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to render report template"})
-		return
-	}
-
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, html.String())
+	return view, http.StatusOK, nil
 }

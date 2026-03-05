@@ -99,7 +99,7 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /register [post]
 func (r *userRepository) RegisterHandler(c *gin.Context) {
-	var user models.LoginUser
+	var user models.RegisterUser
 
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -114,7 +114,12 @@ func (r *userRepository) RegisterHandler(c *gin.Context) {
 	}
 
 	// Create new user
-	newUser := models.User{Username: user.Username, Password: hashedPassword}
+	role := user.Role
+	if role == "" {
+		role = "guru"
+	}
+
+	newUser := models.User{Username: user.Username, Password: hashedPassword, Role: role}
 
 	// Save the user to the database
 	if err := r.DB.Create(&newUser).Error; err != nil {
