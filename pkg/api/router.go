@@ -28,6 +28,8 @@ func ContextMiddleware(bookRepository BookRepository) gin.HandlerFunc {
 func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db database.Database, redisClient cache.Cache, ctx *context.Context) *gin.Engine {
 	bookRepository := NewBookRepository(db, redisClient, ctx)
 	studentRepository := NewStudentRepository(db, ctx)
+	gradeRepository := NewGradeRepository(db, ctx)
+	reportRepository := NewReportRepository(db)
 	userRepository := NewUserRepository(db, ctx)
 
 	r := gin.Default()
@@ -57,6 +59,13 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.GET("/students/:id", middleware.APIKeyAuth(), studentRepository.FindStudent)
 		v1.PUT("/students/:id", middleware.APIKeyAuth(), studentRepository.UpdateStudent)
 		v1.DELETE("/students/:id", middleware.APIKeyAuth(), studentRepository.DeleteStudent)
+
+		v1.GET("/grades", middleware.APIKeyAuth(), gradeRepository.FindGrades)
+		v1.POST("/grades", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.CreateGrade)
+		v1.PUT("/grades/:id", middleware.APIKeyAuth(), gradeRepository.UpdateGrade)
+		v1.DELETE("/grades/:id", middleware.APIKeyAuth(), gradeRepository.DeleteGrade)
+
+		v1.GET("/reports/students/:student_id/print", middleware.APIKeyAuth(), reportRepository.PrintReportCard)
 
 		v1.POST("/login", middleware.APIKeyAuth(), userRepository.LoginHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)

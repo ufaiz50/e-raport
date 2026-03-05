@@ -132,6 +132,11 @@ http://localhost:8001/swagger/index.html
 - `DELETE /api/v1/books/:id`: Delete a book.
 - `POST /api/v1/login`: Login.
 - `POST /api/v1/register`: Register a new user.
+- `GET /api/v1/grades`: List grades (supports `student_id`, `semester`, `academic_year`).
+- `POST /api/v1/grades`: Create grade per student & subject.
+- `PUT /api/v1/grades/:id`: Update grade.
+- `DELETE /api/v1/grades/:id`: Delete grade.
+- `GET /api/v1/reports/students/:student_id/print?semester=1&academic_year=2025/2026`: Printable report card HTML (can be saved as PDF from browser print dialog).
 
 ### Authentication
 
