@@ -136,8 +136,16 @@ http://localhost:8001/swagger/index.html
 - `POST /api/v1/grades`: Create grade per student & subject.
 - `PUT /api/v1/grades/:id`: Update grade.
 - `DELETE /api/v1/grades/:id`: Delete grade.
+- `GET /api/v1/classes`: List classes.
+- `POST /api/v1/classes`: Create class.
+- `PUT /api/v1/classes/:id`: Update class.
+- `DELETE /api/v1/classes/:id`: Delete class.
+- `GET /api/v1/school-profile`: Get school profile.
+- `PUT /api/v1/school-profile`: Upsert school profile for report header/signature.
 - `GET /api/v1/reports/students/:student_id/print?semester=1&academic_year=2025/2026`: Printable report card HTML (can be saved as PDF from browser print dialog).
 - `GET /api/v1/reports/students/:student_id/pdf?semester=1&academic_year=2025/2026`: Direct PDF export for report card.
+- `GET /api/v1/reports/classes/:class_id/pdf?semester=1&academic_year=2025/2026`: Batch PDF report card per class.
+- `POST /api/v1/reports/students/:student_id/finalize?semester=1&academic_year=2025/2026`: Finalize report card status.
 
 ### Authentication
 

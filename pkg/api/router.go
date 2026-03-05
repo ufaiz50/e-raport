@@ -28,8 +28,10 @@ func ContextMiddleware(bookRepository BookRepository) gin.HandlerFunc {
 func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db database.Database, redisClient cache.Cache, ctx *context.Context) *gin.Engine {
 	bookRepository := NewBookRepository(db, redisClient, ctx)
 	studentRepository := NewStudentRepository(db, ctx)
+	classRepository := NewClassRepository(db, ctx)
 	gradeRepository := NewGradeRepository(db, ctx)
 	reportRepository := NewReportRepository(db)
+	schoolProfileRepository := NewSchoolProfileRepository(db)
 	userRepository := NewUserRepository(db, ctx)
 
 	r := gin.Default()
@@ -60,6 +62,11 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.PUT("/students/:id", middleware.APIKeyAuth(), studentRepository.UpdateStudent)
 		v1.DELETE("/students/:id", middleware.APIKeyAuth(), studentRepository.DeleteStudent)
 
+		v1.GET("/classes", middleware.APIKeyAuth(), classRepository.FindClasses)
+		v1.POST("/classes", middleware.APIKeyAuth(), middleware.JWTAuth(), classRepository.CreateClass)
+		v1.PUT("/classes/:id", middleware.APIKeyAuth(), classRepository.UpdateClass)
+		v1.DELETE("/classes/:id", middleware.APIKeyAuth(), classRepository.DeleteClass)
+
 		v1.GET("/grades", middleware.APIKeyAuth(), gradeRepository.FindGrades)
 		v1.POST("/grades", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.CreateGrade)
 		v1.PUT("/grades/:id", middleware.APIKeyAuth(), gradeRepository.UpdateGrade)
@@ -67,6 +74,11 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 
 		v1.GET("/reports/students/:student_id/print", middleware.APIKeyAuth(), reportRepository.PrintReportCard)
 		v1.GET("/reports/students/:student_id/pdf", middleware.APIKeyAuth(), reportRepository.PrintReportCardPDF)
+		v1.GET("/reports/classes/:class_id/pdf", middleware.APIKeyAuth(), reportRepository.PrintReportCardClassPDF)
+		v1.POST("/reports/students/:student_id/finalize", middleware.APIKeyAuth(), middleware.JWTAuth(), reportRepository.FinalizeReportCard)
+
+		v1.GET("/school-profile", middleware.APIKeyAuth(), schoolProfileRepository.Get)
+		v1.PUT("/school-profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Upsert)
 
 		v1.POST("/login", middleware.APIKeyAuth(), userRepository.LoginHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)

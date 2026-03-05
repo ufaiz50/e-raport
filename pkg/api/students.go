@@ -61,6 +61,14 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 	}
 
 	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type}
+	if input.ClassID != nil {
+		var class models.Class
+		if err := r.DB.Where("id = ?", *input.ClassID).First(&class).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
+			return
+		}
+		student.ClassID = input.ClassID
+	}
 	r.DB.Create(&student)
 	c.JSON(http.StatusCreated, gin.H{"data": student})
 }
@@ -111,7 +119,15 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 		return
 	}
 
-	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type})
+	if input.ClassID != nil {
+		var class models.Class
+		if err := r.DB.Where("id = ?", *input.ClassID).First(&class).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
+			return
+		}
+	}
+
+	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, ClassID: input.ClassID})
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 
