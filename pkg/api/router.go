@@ -92,6 +92,8 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
 	}
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	r.GET("/docs", ScalarDocs)
+	r.StaticFile("/openapi.yaml", "./docs/swagger.yaml")
 
 	return r
 }

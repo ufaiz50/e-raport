@@ -121,6 +121,18 @@ The API is documented using Swagger and can be accessed at:
 http://localhost:8001/swagger/index.html
 ```
 
+Alternative API docs (Scalar UI) are available at:
+
+```
+http://localhost:8001/docs
+```
+
+OpenAPI file served by the app:
+
+```
+http://localhost:8001/openapi.yaml
+```
+
 ## Usage
 
 ### Endpoints
