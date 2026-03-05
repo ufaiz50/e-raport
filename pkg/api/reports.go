@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jung-kurt/gofpdf"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 type reportRepository struct {
@@ -50,6 +51,11 @@ type reportView struct {
 	ReportStatus   string
 	HomeroomTeach  string
 	FinalizedAtStr string
+	SickDays       int
+	PermissionDays int
+	AbsentDays     int
+	HomeroomNote   string
+	VerificationID string
 }
 
 var reportTemplate = template.Must(template.New("report_card").Parse(`<!doctype html>
@@ -118,6 +124,12 @@ var reportTemplate = template.Must(template.New("report_card").Parse(`<!doctype 
       </tr>
     </tbody>
   </table>
+
+  <div class="info">
+    <p><strong>Absensi:</strong> Sakit {{.SickDays}} hari, Izin {{.PermissionDays}} hari, Alpha {{.AbsentDays}} hari</p>
+    <p><strong>Catatan Wali Kelas:</strong> {{.HomeroomNote}}</p>
+    <p><strong>Verifikasi:</strong> {{.VerificationID}}</p>
+  </div>
 
   <div class="footer">
     <div>
@@ -310,6 +322,25 @@ func (r *reportRepository) renderStudentReportPDF(pdf *gofpdf.Fpdf, view reportV
 		pdf.CellFormat(widths[6], 8, row.Notes, "1", 0, "L", false, 0, "")
 		pdf.Ln(-1)
 	}
+
+	pdf.Ln(6)
+	pdf.SetFont("Arial", "", 10)
+	pdf.Cell(0, 6, fmt.Sprintf("Absensi: Sakit %d | Izin %d | Alpha %d", view.SickDays, view.PermissionDays, view.AbsentDays))
+	pdf.Ln(6)
+	pdf.MultiCell(0, 6, "Catatan Wali Kelas: "+view.HomeroomNote, "", "L", false)
+	pdf.Cell(0, 6, "Verifikasi: "+view.VerificationID)
+
+	if png, err := qrcode.Encode(view.VerificationID, qrcode.Medium, 160); err == nil {
+		name := "qr_" + fmt.Sprintf("%d", time.Now().UnixNano())
+		opt := gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: false}
+		pdf.RegisterImageOptionsReader(name, opt, bytes.NewReader(png))
+		x := 170.0
+		y := pdf.GetY() - 10
+		if y < 20 {
+			y = 20
+		}
+		pdf.ImageOptions(name, x, y, 25, 25, false, opt, 0, "")
+	}
 }
 
 func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (reportView, int, error) {
@@ -378,6 +409,14 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	school := models.SchoolProfile{SchoolName: "E-Raport Internal School"}
 	_ = r.DB.Order("id asc").First(&school).Error
 
+	attendance := models.Attendance{}
+	_ = r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).First(&attendance).Error()
+
+	note := models.ReportNote{HomeroomComment: "-"}
+	_ = r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).First(&note).Error()
+
+	verificationID := fmt.Sprintf("ERAPORT-%d-%d-%s", studentID, semester, academicYear)
+
 	return reportView{
 		SchoolName:     school.SchoolName,
 		SchoolAddress:  school.Address,
@@ -395,6 +434,11 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 		ReportStatus:   reportStatus,
 		HomeroomTeach:  homeroom,
 		FinalizedAtStr: finalizedAtStr,
+		SickDays:       attendance.SickDays,
+		PermissionDays: attendance.PermissionDays,
+		AbsentDays:     attendance.AbsentDays,
+		HomeroomNote:   note.HomeroomComment,
+		VerificationID: verificationID,
 	}, http.StatusOK, nil
 }
 

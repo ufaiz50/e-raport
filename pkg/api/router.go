@@ -32,6 +32,8 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 	gradeRepository := NewGradeRepository(db, ctx)
 	reportRepository := NewReportRepository(db)
 	schoolProfileRepository := NewSchoolProfileRepository(db)
+	attendanceRepository := NewAttendanceRepository(db, ctx)
+	reportNoteRepository := NewReportNoteRepository(db, ctx)
 	userRepository := NewUserRepository(db, ctx)
 
 	r := gin.Default()
@@ -71,6 +73,12 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.POST("/grades", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.CreateGrade)
 		v1.PUT("/grades/:id", middleware.APIKeyAuth(), gradeRepository.UpdateGrade)
 		v1.DELETE("/grades/:id", middleware.APIKeyAuth(), gradeRepository.DeleteGrade)
+
+		v1.GET("/attendances", middleware.APIKeyAuth(), attendanceRepository.FindAttendances)
+		v1.PUT("/attendances", middleware.APIKeyAuth(), middleware.JWTAuth(), attendanceRepository.UpsertAttendance)
+
+		v1.GET("/report-notes", middleware.APIKeyAuth(), reportNoteRepository.FindReportNotes)
+		v1.PUT("/report-notes", middleware.APIKeyAuth(), middleware.JWTAuth(), reportNoteRepository.UpsertReportNote)
 
 		v1.GET("/reports/students/:student_id/print", middleware.APIKeyAuth(), reportRepository.PrintReportCard)
 		v1.GET("/reports/students/:student_id/pdf", middleware.APIKeyAuth(), reportRepository.PrintReportCardPDF)

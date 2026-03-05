@@ -76,6 +76,8 @@ func NewDatabase() *gorm.DB {
 	database.AutoMigrate(&models.Grade{})
 	database.AutoMigrate(&models.ReportCard{})
 	database.AutoMigrate(&models.SchoolProfile{})
+	database.AutoMigrate(&models.Attendance{})
+	database.AutoMigrate(&models.ReportNote{})
 	database.AutoMigrate(&models.User{})
 
 	return database
