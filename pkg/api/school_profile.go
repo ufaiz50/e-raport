@@ -35,6 +35,7 @@ func (r *schoolProfileRepository) Upsert(c *gin.Context) {
 	var profile models.SchoolProfile
 	if err := r.DB.Order("id asc").First(&profile).Error; err != nil {
 		profile = models.SchoolProfile{
+			SchoolID:       input.SchoolID,
 			SchoolName:     input.SchoolName,
 			NPSN:           input.NPSN,
 			Address:        input.Address,
@@ -52,6 +53,7 @@ func (r *schoolProfileRepository) Upsert(c *gin.Context) {
 	}
 
 	if err := r.DB.Model(&profile).Updates(models.SchoolProfile{
+		SchoolID:       input.SchoolID,
 		SchoolName:     input.SchoolName,
 		NPSN:           input.NPSN,
 		Address:        input.Address,

@@ -117,6 +117,7 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 	}
 
 	grade := models.Grade{
+		SchoolID:       input.SchoolID,
 		StudentID:      input.StudentID,
 		BookID:         input.BookID,
 		Semester:       input.Semester,
@@ -166,6 +167,9 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	}
 	if input.Notes != nil {
 		grade.Notes = *input.Notes
+	}
+	if input.SchoolID != nil {
+		grade.SchoolID = input.SchoolID
 	}
 	grade.FinalScore = computeFinalScore(grade.KnowledgeScore, grade.SkillScore)
 

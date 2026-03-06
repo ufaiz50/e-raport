@@ -4,7 +4,9 @@ import "time"
 
 type Class struct {
 	ID           uint      `json:"id" gorm:"primary_key"`
-	Name         string    `json:"name" gorm:"uniqueIndex;not null"`
+	Name         string    `json:"name" gorm:"index:idx_class_name_school,unique;not null"`
+	SchoolID     *uint     `json:"school_id,omitempty" gorm:"index:idx_class_name_school,unique"`
+	School       *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Level        string    `json:"level" gorm:"type:varchar(20);not null"`
 	Homeroom     string    `json:"homeroom"`
 	AcademicYear string    `json:"academic_year" gorm:"type:varchar(20);not null"`
@@ -17,6 +19,7 @@ type CreateClass struct {
 	Level        string `json:"level" binding:"required"`
 	Homeroom     string `json:"homeroom"`
 	AcademicYear string `json:"academic_year" binding:"required"`
+	SchoolID     *uint  `json:"school_id"`
 }
 
 type UpdateClass struct {
@@ -24,4 +27,5 @@ type UpdateClass struct {
 	Level        string `json:"level"`
 	Homeroom     string `json:"homeroom"`
 	AcademicYear string `json:"academic_year"`
+	SchoolID     *uint  `json:"school_id"`
 }

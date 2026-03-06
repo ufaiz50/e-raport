@@ -119,7 +119,7 @@ func (r *userRepository) RegisterHandler(c *gin.Context) {
 		role = "guru"
 	}
 
-	newUser := models.User{Username: user.Username, Password: hashedPassword, Role: role}
+	newUser := models.User{Username: user.Username, Password: hashedPassword, Role: role, SchoolID: user.SchoolID}
 
 	// Save the user to the database
 	if err := r.DB.Create(&newUser).Error; err != nil {

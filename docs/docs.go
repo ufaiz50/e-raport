@@ -857,6 +857,12 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "school": {
+                    "$ref": "#/definitions/models.School"
+                },
+                "school_id": {
+                    "type": "integer"
+                },
                 "student": {
                     "$ref": "#/definitions/models.Student"
                 },
@@ -892,6 +898,12 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "school": {
+                    "$ref": "#/definitions/models.School"
+                },
+                "school_id": {
+                    "type": "integer"
+                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -906,6 +918,9 @@ const docTemplate = `{
             "properties": {
                 "author": {
                     "type": "string"
+                },
+                "school_id": {
+                    "type": "integer"
                 },
                 "student_id": {
                     "type": "integer"
@@ -940,6 +955,9 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "school_id": {
+                    "type": "integer"
+                },
                 "semester": {
                     "type": "integer",
                     "maximum": 2,
@@ -971,6 +989,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "school_id": {
+                    "type": "integer"
                 },
                 "type": {
                     "type": "string",
@@ -1009,6 +1030,12 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "school": {
+                    "$ref": "#/definitions/models.School"
+                },
+                "school_id": {
+                    "type": "integer"
+                },
                 "semester": {
                     "type": "integer"
                 },
@@ -1041,6 +1068,29 @@ const docTemplate = `{
                 }
             }
         },
+        "models.School": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Student": {
             "type": "object",
             "properties": {
@@ -1062,6 +1112,12 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "school": {
+                    "$ref": "#/definitions/models.School"
+                },
+                "school_id": {
+                    "type": "integer"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -1080,6 +1136,9 @@ const docTemplate = `{
             "properties": {
                 "author": {
                     "type": "string"
+                },
+                "school_id": {
+                    "type": "integer"
                 },
                 "student_id": {
                     "type": "integer"
@@ -1100,6 +1159,9 @@ const docTemplate = `{
                 "notes": {
                     "type": "string"
                 },
+                "school_id": {
+                    "type": "integer"
+                },
                 "skill_score": {
                     "type": "number",
                     "maximum": 100,
@@ -1118,6 +1180,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "school_id": {
+                    "type": "integer"
                 },
                 "type": {
                     "type": "string",

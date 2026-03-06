@@ -70,6 +70,7 @@ func (r *reportNoteRepository) UpsertReportNote(c *gin.Context) {
 	var note models.ReportNote
 	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", input.StudentID, input.Semester, input.AcademicYear).First(&note).Error(); err != nil {
 		note = models.ReportNote{
+			SchoolID:        input.SchoolID,
 			StudentID:       input.StudentID,
 			Semester:        input.Semester,
 			AcademicYear:    input.AcademicYear,
@@ -80,6 +81,6 @@ func (r *reportNoteRepository) UpsertReportNote(c *gin.Context) {
 		return
 	}
 
-	r.DB.Model(&note).Updates(models.ReportNote{HomeroomComment: input.HomeroomComment})
+	r.DB.Model(&note).Updates(models.ReportNote{SchoolID: input.SchoolID, HomeroomComment: input.HomeroomComment})
 	c.JSON(http.StatusOK, gin.H{"data": note})
 }

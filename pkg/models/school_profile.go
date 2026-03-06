@@ -4,6 +4,8 @@ import "time"
 
 type SchoolProfile struct {
 	ID             uint      `json:"id" gorm:"primary_key"`
+	SchoolID       *uint     `json:"school_id,omitempty" gorm:"index;unique"`
+	School         *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	SchoolName     string    `json:"school_name" gorm:"not null"`
 	NPSN           string    `json:"npsn"`
 	Address        string    `json:"address"`
@@ -16,6 +18,7 @@ type SchoolProfile struct {
 }
 
 type UpsertSchoolProfile struct {
+	SchoolID       *uint  `json:"school_id"`
 	SchoolName     string `json:"school_name" binding:"required"`
 	NPSN           string `json:"npsn"`
 	Address        string `json:"address"`

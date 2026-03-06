@@ -218,7 +218,7 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 		}
 	}
 
-	book := models.Book{Title: input.Title, Author: input.Author, StudentID: input.StudentID}
+	book := models.Book{Title: input.Title, Author: input.Author, SchoolID: input.SchoolID, StudentID: input.StudentID}
 
 	appCtx.DB.Create(&book)
 
@@ -297,7 +297,7 @@ func (r *bookRepository) UpdateBook(c *gin.Context) {
 		}
 	}
 
-	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author, StudentID: input.StudentID})
+	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author, SchoolID: input.SchoolID, StudentID: input.StudentID})
 
 	c.JSON(http.StatusOK, gin.H{"data": book})
 }

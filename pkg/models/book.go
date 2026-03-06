@@ -6,6 +6,8 @@ type Book struct {
 	ID        uint      `json:"id" gorm:"primary_key"`
 	Title     string    `json:"title"`
 	Author    string    `json:"author"`
+	SchoolID  *uint     `json:"school_id,omitempty" gorm:"index"`
+	School    *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	StudentID *uint     `json:"student_id,omitempty"`
 	Student   *Student  `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
@@ -15,11 +17,13 @@ type Book struct {
 type CreateBook struct {
 	Title     string `json:"title" binding:"required"`
 	Author    string `json:"author" binding:"required"`
+	SchoolID  *uint  `json:"school_id"`
 	StudentID *uint  `json:"student_id"`
 }
 
 type UpdateBook struct {
 	Title     string `json:"title"`
 	Author    string `json:"author"`
+	SchoolID  *uint  `json:"school_id"`
 	StudentID *uint  `json:"student_id"`
 }

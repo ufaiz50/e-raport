@@ -81,7 +81,7 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 		return
 	}
 
-	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type}
+	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: input.SchoolID}
 	if input.ClassID != nil {
 		var class models.Class
 		if err := r.DB.Where("id = ?", *input.ClassID).First(&class).Error(); err != nil {
@@ -148,7 +148,7 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 		}
 	}
 
-	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, ClassID: input.ClassID})
+	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: input.SchoolID, ClassID: input.ClassID})
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 

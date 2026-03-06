@@ -4,9 +4,11 @@ import "time"
 
 type Attendance struct {
 	ID             uint      `json:"id" gorm:"primary_key"`
-	StudentID      uint      `json:"student_id" gorm:"index:idx_attendance_term_student,unique"`
-	Semester       int       `json:"semester" gorm:"index:idx_attendance_term_student,unique"`
-	AcademicYear   string    `json:"academic_year" gorm:"type:varchar(20);index:idx_attendance_term_student,unique"`
+	SchoolID       *uint     `json:"school_id,omitempty" gorm:"index:idx_attendance_term_student_school,unique"`
+	School         *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	StudentID      uint      `json:"student_id" gorm:"index:idx_attendance_term_student_school,unique"`
+	Semester       int       `json:"semester" gorm:"index:idx_attendance_term_student_school,unique"`
+	AcademicYear   string    `json:"academic_year" gorm:"type:varchar(20);index:idx_attendance_term_student_school,unique"`
 	SickDays       int       `json:"sick_days"`
 	PermissionDays int       `json:"permission_days"`
 	AbsentDays     int       `json:"absent_days"`
@@ -15,6 +17,7 @@ type Attendance struct {
 }
 
 type UpsertAttendance struct {
+	SchoolID       *uint  `json:"school_id"`
 	StudentID      uint   `json:"student_id" binding:"required"`
 	Semester       int    `json:"semester" binding:"required,min=1,max=2"`
 	AcademicYear   string `json:"academic_year" binding:"required"`

@@ -70,6 +70,7 @@ func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
 	var attendance models.Attendance
 	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", input.StudentID, input.Semester, input.AcademicYear).First(&attendance).Error(); err != nil {
 		attendance = models.Attendance{
+			SchoolID:       input.SchoolID,
 			StudentID:      input.StudentID,
 			Semester:       input.Semester,
 			AcademicYear:   input.AcademicYear,
@@ -83,6 +84,7 @@ func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
 	}
 
 	r.DB.Model(&attendance).Updates(models.Attendance{
+		SchoolID:       input.SchoolID,
 		SickDays:       input.SickDays,
 		PermissionDays: input.PermissionDays,
 		AbsentDays:     input.AbsentDays,

@@ -59,7 +59,7 @@ func (r *classRepository) CreateClass(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	class := models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear}
+	class := models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: input.SchoolID}
 	if err := r.DB.Create(&class).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create class"})
 		return
@@ -78,7 +78,7 @@ func (r *classRepository) UpdateClass(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := r.DB.Model(&class).Updates(models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear}).Error; err != nil {
+	if err := r.DB.Model(&class).Updates(models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: input.SchoolID}).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update class"})
 		return
 	}
