@@ -19,8 +19,13 @@ func NewClassRepository(db database.Database, ctx *context.Context) *classReposi
 }
 
 func (r *classRepository) FindClasses(c *gin.Context) {
+	offset, limit, ok := parsePagination(c)
+	if !ok {
+		return
+	}
+
 	var classes []models.Class
-	r.DB.Order("name asc").Find(&classes)
+	r.DB.Offset(offset).Limit(limit).Order("name asc").Find(&classes)
 	c.JSON(http.StatusOK, gin.H{"data": classes})
 }
 

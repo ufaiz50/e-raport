@@ -35,8 +35,13 @@ func NewStudentRepository(db database.Database, ctx *context.Context) *studentRe
 // @Success 200 {array} models.Student "Successfully retrieved list of students"
 // @Router /students [get]
 func (r *studentRepository) FindStudents(c *gin.Context) {
+	offset, limit, ok := parsePagination(c)
+	if !ok {
+		return
+	}
+
 	var students []models.Student
-	r.DB.Find(&students)
+	r.DB.Offset(offset).Limit(limit).Order("id asc").Find(&students)
 	c.JSON(http.StatusOK, gin.H{"data": students})
 }
 
