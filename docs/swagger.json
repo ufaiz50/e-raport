@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "description": "This is a sample server celler server.",
-        "title": "Swagger Example API",
+        "title": "E-Raport API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "API Support",
@@ -271,6 +271,220 @@
                 }
             }
         },
+        "/classes": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get a list of all classes with optional pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Get all classes with pagination",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Limit for pagination",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved list of classes",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Class"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/grades": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get grade list with optional filters: student_id, semester, academic_year",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "grades"
+                ],
+                "summary": "Get grades",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Student ID",
+                        "name": "student_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Semester",
+                        "name": "semester",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Academic year",
+                        "name": "academic_year",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved list of grades",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Grade"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "JwtAuth": []
+                    }
+                ],
+                "description": "Create grade for a student and subject(book)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "grades"
+                ],
+                "summary": "Create a grade",
+                "parameters": [
+                    {
+                        "description": "Create grade object",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateGrade"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Successfully created grade",
+                        "schema": {
+                            "$ref": "#/definitions/models.Grade"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/grades/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "grades"
+                ],
+                "summary": "Update grade by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Grade ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update grade object",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateGrade"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated grade",
+                        "schema": {
+                            "$ref": "#/definitions/models.Grade"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "grades"
+                ],
+                "summary": "Delete grade by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Grade ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted grade",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "security": [
@@ -358,7 +572,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "201": {
                         "description": "Successfully registered",
                         "schema": {
                             "type": "string"
@@ -386,14 +600,30 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get a list of all students",
+                "description": "Get a list of all students with optional pagination",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "students"
                 ],
-                "summary": "Get all students",
+                "summary": "Get all students with pagination",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Limit for pagination",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successfully retrieved list of students",
@@ -607,7 +837,39 @@
                 "id": {
                     "type": "integer"
                 },
+                "student": {
+                    "$ref": "#/definitions/models.Student"
+                },
+                "student_id": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Class": {
+            "type": "object",
+            "properties": {
+                "academic_year": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "homeroom": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -625,7 +887,121 @@
                 "author": {
                     "type": "string"
                 },
+                "student_id": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateGrade": {
+            "type": "object",
+            "required": [
+                "academic_year",
+                "book_id",
+                "knowledge_score",
+                "semester",
+                "skill_score",
+                "student_id"
+            ],
+            "properties": {
+                "academic_year": {
+                    "type": "string"
+                },
+                "book_id": {
+                    "type": "integer"
+                },
+                "knowledge_score": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "integer",
+                    "maximum": 2,
+                    "minimum": 1
+                },
+                "skill_score": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                },
+                "student_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.CreateStudent": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "type"
+            ],
+            "properties": {
+                "class_id": {
+                    "type": "integer"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "junior",
+                        "senior"
+                    ],
+                    "example": "junior"
+                }
+            }
+        },
+        "models.Grade": {
+            "type": "object",
+            "properties": {
+                "academic_year": {
+                    "type": "string"
+                },
+                "book": {
+                    "$ref": "#/definitions/models.Book"
+                },
+                "book_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "final_score": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "knowledge_score": {
+                    "type": "number"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "semester": {
+                    "type": "integer"
+                },
+                "skill_score": {
+                    "type": "number"
+                },
+                "student": {
+                    "$ref": "#/definitions/models.Student"
+                },
+                "student_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -645,29 +1021,27 @@
                 }
             }
         },
-        "models.UpdateBook": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Student": {
             "type": "object",
             "properties": {
+                "class": {
+                    "$ref": "#/definitions/models.Class"
+                },
+                "class_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
-                "email": {
-                    "type": "string"
-                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -675,46 +1049,54 @@
                         "senior"
                     ],
                     "example": "junior"
-                },
-                "created_at": {
-                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "models.CreateStudent": {
+        "models.UpdateBook": {
             "type": "object",
-            "required": [
-                "name",
-                "email",
-                "type"
-            ],
             "properties": {
-                "name": {
+                "author": {
                     "type": "string"
                 },
-                "email": {
+                "student_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpdateGrade": {
+            "type": "object",
+            "properties": {
+                "knowledge_score": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                },
+                "notes": {
                     "type": "string"
                 },
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "junior",
-                        "senior"
-                    ],
-                    "example": "junior"
+                "skill_score": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
                 }
             }
         },
         "models.UpdateStudent": {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string"
+                "class_id": {
+                    "type": "integer"
                 },
                 "email": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 },
                 "type": {

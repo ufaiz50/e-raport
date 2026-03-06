@@ -18,6 +18,16 @@ func NewClassRepository(db database.Database, ctx *context.Context) *classReposi
 	return &classRepository{DB: db, Ctx: ctx}
 }
 
+// FindClasses godoc
+// @Summary Get all classes with pagination
+// @Description Get a list of all classes with optional pagination
+// @Tags classes
+// @Security ApiKeyAuth
+// @Produce json
+// @Param offset query int false "Offset for pagination" default(0)
+// @Param limit query int false "Limit for pagination" default(10)
+// @Success 200 {array} models.Class "Successfully retrieved list of classes"
+// @Router /classes [get]
 func (r *classRepository) FindClasses(c *gin.Context) {
 	offset, limit, ok := parsePagination(c)
 	if !ok {

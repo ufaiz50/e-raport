@@ -1,574 +1,730 @@
-swagger: '2.0'
-info:
-  title: E-Raport API
-  version: '1.0'
-  description: API documentation for internal school e-raport service.
-host: localhost:8001
 basePath: /api/v1
-schemes:
-  - http
-consumes:
-  - application/json
-produces:
-  - application/json
+definitions:
+  models.Book:
+    properties:
+      author:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      student:
+        $ref: '#/definitions/models.Student'
+      student_id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Class:
+    properties:
+      academic_year:
+        type: string
+      created_at:
+        type: string
+      homeroom:
+        type: string
+      id:
+        type: integer
+      level:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.CreateBook:
+    properties:
+      author:
+        type: string
+      student_id:
+        type: integer
+      title:
+        type: string
+    required:
+    - author
+    - title
+    type: object
+  models.CreateGrade:
+    properties:
+      academic_year:
+        type: string
+      book_id:
+        type: integer
+      knowledge_score:
+        maximum: 100
+        minimum: 0
+        type: number
+      notes:
+        type: string
+      semester:
+        maximum: 2
+        minimum: 1
+        type: integer
+      skill_score:
+        maximum: 100
+        minimum: 0
+        type: number
+      student_id:
+        type: integer
+    required:
+    - academic_year
+    - book_id
+    - knowledge_score
+    - semester
+    - skill_score
+    - student_id
+    type: object
+  models.CreateStudent:
+    properties:
+      class_id:
+        type: integer
+      email:
+        type: string
+      name:
+        type: string
+      type:
+        enum:
+        - junior
+        - senior
+        example: junior
+        type: string
+    required:
+    - email
+    - name
+    - type
+    type: object
+  models.Grade:
+    properties:
+      academic_year:
+        type: string
+      book:
+        $ref: '#/definitions/models.Book'
+      book_id:
+        type: integer
+      created_at:
+        type: string
+      final_score:
+        type: number
+      id:
+        type: integer
+      knowledge_score:
+        type: number
+      notes:
+        type: string
+      semester:
+        type: integer
+      skill_score:
+        type: number
+      student:
+        $ref: '#/definitions/models.Student'
+      student_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.LoginUser:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.Student:
+    properties:
+      class:
+        $ref: '#/definitions/models.Class'
+      class_id:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      type:
+        enum:
+        - junior
+        - senior
+        example: junior
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.UpdateBook:
+    properties:
+      author:
+        type: string
+      student_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  models.UpdateGrade:
+    properties:
+      knowledge_score:
+        maximum: 100
+        minimum: 0
+        type: number
+      notes:
+        type: string
+      skill_score:
+        maximum: 100
+        minimum: 0
+        type: number
+    type: object
+  models.UpdateStudent:
+    properties:
+      class_id:
+        type: integer
+      email:
+        type: string
+      name:
+        type: string
+      type:
+        enum:
+        - junior
+        - senior
+        example: senior
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8001
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server celler server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: E-Raport API
+  version: "1.0"
 paths:
   /:
     get:
-      tags: [example]
-      summary: Healthcheck
+      consumes:
+      - application/json
+      description: do ping
+      produces:
+      - application/json
       responses:
-        '200':
+        "200":
           description: OK
-          schema: { type: string }
-
-  /login:
-    post:
-      tags: [user]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Login
-      parameters:
-        - in: body
-          name: user
-          required: true
-          schema: { $ref: '#/definitions/models.LoginUser' }
-      responses:
-        '200': { description: JWT token }
-
-  /register:
-    post:
-      tags: [user]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Register
-      parameters:
-        - in: body
-          name: user
-          required: true
-          schema: { $ref: '#/definitions/models.RegisterUser' }
-      responses:
-        '201': { description: Created }
-
+          schema:
+            type: string
+      summary: ping example
+      tags:
+      - example
   /books:
     get:
-      tags: [books]
-      security: [{ ApiKeyAuth: [] }]
-      summary: List books
+      description: Get a list of all books with optional pagination
       parameters:
-        - in: query
-          name: offset
-          type: integer
-        - in: query
-          name: limit
-          type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
       responses:
-        '200':
-          description: OK
+        "200":
+          description: Successfully retrieved list of books
           schema:
+            items:
+              $ref: '#/definitions/models.Book'
             type: array
-            items: { $ref: '#/definitions/models.Book' }
+      security:
+      - ApiKeyAuth: []
+      summary: Get all books with pagination
+      tags:
+      - books
     post:
-      tags: [books]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Create book
+      consumes:
+      - application/json
+      description: Create a new book with the given input data
       parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.CreateBook' }
+      - description: Create book object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateBook'
+      produces:
+      - application/json
       responses:
-        '201': { description: Created }
-
+        "201":
+          description: Successfully created book
+          schema:
+            $ref: '#/definitions/models.Book'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Create a new book
+      tags:
+      - books
   /books/{id}:
-    get:
-      tags: [books]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Get book by id
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-      responses:
-        '200': { description: OK }
-    put:
-      tags: [books]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Update book
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpdateBook' }
-      responses:
-        '200': { description: OK }
     delete:
-      tags: [books]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Delete book
+      description: Delete the book with the given ID
       parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '204': { description: No Content }
-
-  /students:
-    get:
-      tags: [students]
-      security: [{ ApiKeyAuth: [] }]
-      summary: List students
-      responses:
-        '200':
-          description: OK
+        "204":
+          description: Successfully deleted book
           schema:
-            type: array
-            items: { $ref: '#/definitions/models.Student' }
-    post:
-      tags: [students]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Create student
-      parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.CreateStudent' }
-      responses:
-        '201': { description: Created }
-
-  /students/{id}:
+            type: string
+        "404":
+          description: book not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a book by ID
+      tags:
+      - books
     get:
-      tags: [students]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Get student by id
+      description: Get details of a book by its ID
       parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200': { description: OK }
+        "200":
+          description: Successfully retrieved book
+          schema:
+            $ref: '#/definitions/models.Book'
+        "404":
+          description: Book not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Find a book by ID
+      tags:
+      - books
     put:
-      tags: [students]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Update student
+      consumes:
+      - application/json
+      description: Update the book details for the given ID
       parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpdateStudent' }
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update book object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateBook'
+      produces:
+      - application/json
       responses:
-        '200': { description: OK }
-    delete:
-      tags: [students]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Delete student
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-      responses:
-        '204': { description: No Content }
-
+        "200":
+          description: Successfully updated book
+          schema:
+            $ref: '#/definitions/models.Book'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: book not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a book by ID
+      tags:
+      - books
   /classes:
     get:
-      tags: [classes]
-      security: [{ ApiKeyAuth: [] }]
-      summary: List classes
-      responses: { '200': { description: OK } }
-    post:
-      tags: [classes]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Create class
+      description: Get a list of all classes with optional pagination
       parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.CreateClass' }
-      responses: { '201': { description: Created } }
-
-  /classes/{id}:
-    put:
-      tags: [classes]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Update class
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpdateClass' }
-      responses: { '200': { description: OK } }
-    delete:
-      tags: [classes]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Delete class
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-      responses: { '204': { description: No Content } }
-
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of classes
+          schema:
+            items:
+              $ref: '#/definitions/models.Class'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get all classes with pagination
+      tags:
+      - classes
   /grades:
     get:
-      tags: [grades]
-      security: [{ ApiKeyAuth: [] }]
-      summary: List grades
+      description: 'Get grade list with optional filters: student_id, semester, academic_year'
       parameters:
-        - in: query
-          name: student_id
-          type: integer
-        - in: query
-          name: semester
-          type: integer
-        - in: query
-          name: academic_year
-          type: string
-      responses: { '200': { description: OK } }
-    post:
-      tags: [grades]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Create grade
-      parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.CreateGrade' }
-      responses: { '201': { description: Created } }
-
-  /grades/{id}:
-    put:
-      tags: [grades]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Update grade
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpdateGrade' }
-      responses: { '200': { description: OK } }
-    delete:
-      tags: [grades]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Delete grade
-      parameters:
-        - in: path
-          name: id
-          required: true
-          type: string
-      responses: { '204': { description: No Content } }
-
-  /attendances:
-    get:
-      tags: [attendances]
-      security: [{ ApiKeyAuth: [] }]
-      summary: List attendances
-      parameters:
-        - in: query
-          name: student_id
-          type: integer
-        - in: query
-          name: semester
-          type: integer
-        - in: query
-          name: academic_year
-          type: string
-      responses: { '200': { description: OK } }
-    put:
-      tags: [attendances]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Upsert attendance
-      parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpsertAttendance' }
-      responses: { '200': { description: OK } }
-
-  /report-notes:
-    get:
-      tags: [report-notes]
-      security: [{ ApiKeyAuth: [] }]
-      summary: List report notes
-      parameters:
-        - in: query
-          name: student_id
-          type: integer
-        - in: query
-          name: semester
-          type: integer
-        - in: query
-          name: academic_year
-          type: string
-      responses: { '200': { description: OK } }
-    put:
-      tags: [report-notes]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Upsert report note
-      parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpsertReportNote' }
-      responses: { '200': { description: OK } }
-
-  /school-profile:
-    get:
-      tags: [school-profile]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Get school profile
-      responses: { '200': { description: OK } }
-    put:
-      tags: [school-profile]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Upsert school profile
-      parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpsertSchoolProfile' }
-      responses: { '200': { description: OK } }
-
-  /reports/students/{student_id}/print:
-    get:
-      tags: [reports]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Printable HTML report card
-      produces: [text/html]
-      parameters:
-        - in: path
-          name: student_id
-          required: true
-          type: integer
-        - in: query
-          name: semester
-          required: true
-          type: integer
-        - in: query
-          name: academic_year
-          required: true
-          type: string
-      responses: { '200': { description: OK } }
-
-  /reports/students/{student_id}/pdf:
-    get:
-      tags: [reports]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Export student report PDF
-      produces: [application/pdf]
-      parameters:
-        - in: path
-          name: student_id
-          required: true
-          type: integer
-        - in: query
-          name: semester
-          required: true
-          type: integer
-        - in: query
-          name: academic_year
-          required: true
-          type: string
-      responses: { '200': { description: OK } }
-
-  /reports/classes/{class_id}/pdf:
-    get:
-      tags: [reports]
-      security: [{ ApiKeyAuth: [] }]
-      summary: Export class report PDF (batch)
-      produces: [application/pdf]
-      parameters:
-        - in: path
-          name: class_id
-          required: true
-          type: integer
-        - in: query
-          name: semester
-          required: true
-          type: integer
-        - in: query
-          name: academic_year
-          required: true
-          type: string
-      responses: { '200': { description: OK } }
-
-  /reports/students/{student_id}/finalize:
-    post:
-      tags: [reports]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Finalize report card
-      parameters:
-        - in: path
-          name: student_id
-          required: true
-          type: integer
-        - in: query
-          name: semester
-          required: true
-          type: integer
-        - in: query
-          name: academic_year
-          required: true
-          type: string
-      responses: { '200': { description: OK } }
-
-definitions:
-  models.LoginUser:
-    type: object
-    required: [username, password]
-    properties:
-      username: { type: string }
-      password: { type: string }
-
-  models.RegisterUser:
-    type: object
-    required: [username, password]
-    properties:
-      username: { type: string }
-      password: { type: string }
-      role:
+      - description: Student ID
+        in: query
+        name: student_id
+        type: integer
+      - description: Semester
+        in: query
+        name: semester
+        type: integer
+      - description: Academic year
+        in: query
+        name: academic_year
         type: string
-        enum: [admin, guru, wali_kelas]
-
-  models.Book:
-    type: object
-    properties:
-      id: { type: integer }
-      title: { type: string }
-      author: { type: string }
-      student_id: { type: integer }
-
-  models.CreateBook:
-    type: object
-    required: [title, author]
-    properties:
-      title: { type: string }
-      author: { type: string }
-      student_id: { type: integer }
-
-  models.UpdateBook:
-    type: object
-    properties:
-      title: { type: string }
-      author: { type: string }
-      student_id: { type: integer }
-
-  models.Student:
-    type: object
-    properties:
-      id: { type: integer }
-      name: { type: string }
-      email: { type: string }
-      type: { type: string, enum: [junior, senior] }
-      class_id: { type: integer }
-
-  models.CreateStudent:
-    type: object
-    required: [name, email, type]
-    properties:
-      name: { type: string }
-      email: { type: string }
-      type: { type: string, enum: [junior, senior] }
-      class_id: { type: integer }
-
-  models.UpdateStudent:
-    type: object
-    properties:
-      name: { type: string }
-      email: { type: string }
-      type: { type: string, enum: [junior, senior] }
-      class_id: { type: integer }
-
-  models.CreateClass:
-    type: object
-    required: [name, level, academic_year]
-    properties:
-      name: { type: string }
-      level: { type: string }
-      homeroom: { type: string }
-      academic_year: { type: string }
-
-  models.UpdateClass:
-    type: object
-    properties:
-      name: { type: string }
-      level: { type: string }
-      homeroom: { type: string }
-      academic_year: { type: string }
-
-  models.CreateGrade:
-    type: object
-    required: [student_id, book_id, semester, academic_year, knowledge_score, skill_score]
-    properties:
-      student_id: { type: integer }
-      book_id: { type: integer }
-      semester: { type: integer }
-      academic_year: { type: string }
-      knowledge_score: { type: number }
-      skill_score: { type: number }
-      notes: { type: string }
-
-  models.UpdateGrade:
-    type: object
-    properties:
-      knowledge_score: { type: number }
-      skill_score: { type: number }
-      notes: { type: string }
-
-  models.UpsertAttendance:
-    type: object
-    required: [student_id, semester, academic_year]
-    properties:
-      student_id: { type: integer }
-      semester: { type: integer }
-      academic_year: { type: string }
-      sick_days: { type: integer }
-      permission_days: { type: integer }
-      absent_days: { type: integer }
-
-  models.UpsertReportNote:
-    type: object
-    required: [student_id, semester, academic_year, homeroom_comment]
-    properties:
-      student_id: { type: integer }
-      semester: { type: integer }
-      academic_year: { type: string }
-      homeroom_comment: { type: string }
-
-  models.UpsertSchoolProfile:
-    type: object
-    required: [school_name]
-    properties:
-      school_name: { type: string }
-      npsn: { type: string }
-      address: { type: string }
-      principal_name: { type: string }
-      principal_nip: { type: string }
-      headmaster_sign: { type: string }
-      school_stamp: { type: string }
-
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of grades
+          schema:
+            items:
+              $ref: '#/definitions/models.Grade'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get grades
+      tags:
+      - grades
+    post:
+      consumes:
+      - application/json
+      description: Create grade for a student and subject(book)
+      parameters:
+      - description: Create grade object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateGrade'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully created grade
+          schema:
+            $ref: '#/definitions/models.Grade'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Create a grade
+      tags:
+      - grades
+  /grades/{id}:
+    delete:
+      parameters:
+      - description: Grade ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successfully deleted grade
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete grade by ID
+      tags:
+      - grades
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Grade ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update grade object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateGrade'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated grade
+          schema:
+            $ref: '#/definitions/models.Grade'
+      security:
+      - ApiKeyAuth: []
+      summary: Update grade by ID
+      tags:
+      - grades
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user using username and password, returns a JWT
+        token if successful
+      parameters:
+      - description: User login object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT Token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Authenticate a user
+      tags:
+      - user
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with the given username and password
+      parameters:
+      - description: User registration object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully registered
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Register a new user
+      tags:
+      - user
+  /students:
+    get:
+      description: Get a list of all students with optional pagination
+      parameters:
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of students
+          schema:
+            items:
+              $ref: '#/definitions/models.Student'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get all students with pagination
+      tags:
+      - students
+    post:
+      consumes:
+      - application/json
+      description: Create a new student with kindergarten type (junior/senior)
+      parameters:
+      - description: Create student object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateStudent'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully created student
+          schema:
+            $ref: '#/definitions/models.Student'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Create a new student
+      tags:
+      - students
+  /students/{id}:
+    delete:
+      description: Delete student by ID
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successfully deleted student
+          schema:
+            type: string
+        "404":
+          description: Student not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a student by ID
+      tags:
+      - students
+    get:
+      description: Get details of a student by ID
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved student
+          schema:
+            $ref: '#/definitions/models.Student'
+        "404":
+          description: Student not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Find a student by ID
+      tags:
+      - students
+    put:
+      consumes:
+      - application/json
+      description: Update student details and kindergarten type (junior/senior)
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update student object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateStudent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated student
+          schema:
+            $ref: '#/definitions/models.Student'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Student not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a student by ID
+      tags:
+      - students
 securityDefinitions:
   ApiKeyAuth:
-    type: apiKey
+    in: header
     name: X-API-Key
-    in: header
-  JwtAuth:
     type: apiKey
-    name: Authorization
+  JwtAuth:
     in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

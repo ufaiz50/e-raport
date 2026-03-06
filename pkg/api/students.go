@@ -27,11 +27,13 @@ func NewStudentRepository(db database.Database, ctx *context.Context) *studentRe
 }
 
 // FindStudents godoc
-// @Summary Get all students
-// @Description Get a list of all students
+// @Summary Get all students with pagination
+// @Description Get a list of all students with optional pagination
 // @Tags students
 // @Security ApiKeyAuth
 // @Produce json
+// @Param offset query int false "Offset for pagination" default(0)
+// @Param limit query int false "Limit for pagination" default(10)
 // @Success 200 {array} models.Student "Successfully retrieved list of students"
 // @Router /students [get]
 func (r *studentRepository) FindStudents(c *gin.Context) {
