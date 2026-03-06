@@ -681,6 +681,57 @@ paths:
       summary: Create school
       tags:
       - schools
+  /schools/{id}:
+    delete:
+      description: Delete school by id (super admin only)
+      parameters:
+      - description: School ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successfully deleted school
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Delete school
+      tags:
+      - schools
+    put:
+      consumes:
+      - application/json
+      description: Update school by id (super admin only)
+      parameters:
+      - description: School ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: School object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.School'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.School'
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Update school
+      tags:
+      - schools
   /students:
     get:
       description: Get a list of all students with optional pagination

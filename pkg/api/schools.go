@@ -78,3 +78,75 @@ func (r *schoolRepository) CreateSchool(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, gin.H{"data": school})
 }
+
+// UpdateSchool godoc
+// @Summary Update school
+// @Description Update school by id (super admin only)
+// @Tags schools
+// @Security ApiKeyAuth
+// @Security JwtAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "School ID"
+// @Param input body models.School true "School object"
+// @Success 200 {object} models.School
+// @Router /schools/{id} [put]
+func (r *schoolRepository) UpdateSchool(c *gin.Context) {
+	var school models.School
+	if err := r.DB.Where("id = ?", c.Param("id")).First(&school).Error(); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "school not found"})
+		return
+	}
+
+	var input models.School
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := r.DB.Model(&school).Updates(models.School{Name: input.Name, Code: input.Code, Address: input.Address}).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update school"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": school})
+}
+
+// DeleteSchool godoc
+// @Summary Delete school
+// @Description Delete school by id (super admin only)
+// @Tags schools
+// @Security ApiKeyAuth
+// @Security JwtAuth
+// @Produce json
+// @Param id path int true "School ID"
+// @Success 204 {string} string "Successfully deleted school"
+// @Router /schools/{id} [delete]
+func (r *schoolRepository) DeleteSchool(c *gin.Context) {
+	var school models.School
+	if err := r.DB.Where("id = ?", c.Param("id")).First(&school).Error(); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "school not found"})
+		return
+	}
+
+	// guard: prevent deleting school with dependent data
+	var count int64
+	r.DB.Where("school_id = ?", school.ID).Model(&models.User{}).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete school: users still linked"})
+		return
+	}
+	r.DB.Where("school_id = ?", school.ID).Model(&models.Student{}).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete school: students still linked"})
+		return
+	}
+	r.DB.Where("school_id = ?", school.ID).Model(&models.Class{}).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete school: classes still linked"})
+		return
+	}
+
+	r.DB.Delete(&school)
+	c.JSON(http.StatusNoContent, gin.H{"data": true})
+}

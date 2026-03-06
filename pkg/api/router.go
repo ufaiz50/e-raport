@@ -83,6 +83,8 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 
 		v1.GET("/schools", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.ListSchools)
 		v1.POST("/schools", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.CreateSchool)
+		v1.PUT("/schools/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.UpdateSchool)
+		v1.DELETE("/schools/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.DeleteSchool)
 
 		v1.GET("/school-profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Get)
 		v1.PUT("/school-profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Upsert)
