@@ -34,9 +34,23 @@ func (r *classRepository) FindClasses(c *gin.Context) {
 		return
 	}
 
+	var total int64
+	if err := r.DB.Model(&models.Class{}).Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count classes"})
+		return
+	}
+
 	var classes []models.Class
 	r.DB.Offset(offset).Limit(limit).Order("name asc").Find(&classes)
-	c.JSON(http.StatusOK, gin.H{"data": classes})
+	c.JSON(http.StatusOK, gin.H{
+		"data": classes,
+		"meta": gin.H{
+			"offset": offset,
+			"limit":  limit,
+			"total":  total,
+			"count":  len(classes),
+		},
+	})
 }
 
 func (r *classRepository) CreateClass(c *gin.Context) {

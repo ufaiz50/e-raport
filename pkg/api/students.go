@@ -42,9 +42,23 @@ func (r *studentRepository) FindStudents(c *gin.Context) {
 		return
 	}
 
+	var total int64
+	if err := r.DB.Model(&models.Student{}).Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count students"})
+		return
+	}
+
 	var students []models.Student
 	r.DB.Offset(offset).Limit(limit).Order("id asc").Find(&students)
-	c.JSON(http.StatusOK, gin.H{"data": students})
+	c.JSON(http.StatusOK, gin.H{
+		"data": students,
+		"meta": gin.H{
+			"offset": offset,
+			"limit":  limit,
+			"total":  total,
+			"count":  len(students),
+		},
+	})
 }
 
 // CreateStudent godoc

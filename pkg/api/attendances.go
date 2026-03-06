@@ -19,8 +19,13 @@ func NewAttendanceRepository(db database.Database, ctx *context.Context) *attend
 }
 
 func (r *attendanceRepository) FindAttendances(c *gin.Context) {
+	offset, limit, ok := parsePagination(c)
+	if !ok {
+		return
+	}
+
 	var attendances []models.Attendance
-	query := r.DB
+	query := r.DB.Model(&models.Attendance{})
 	if studentID := c.Query("student_id"); studentID != "" {
 		query = query.Where("student_id = ?", studentID)
 	}
@@ -30,8 +35,23 @@ func (r *attendanceRepository) FindAttendances(c *gin.Context) {
 	if academicYear := c.Query("academic_year"); academicYear != "" {
 		query = query.Where("academic_year = ?", academicYear)
 	}
-	query.Order("id desc").Find(&attendances)
-	c.JSON(http.StatusOK, gin.H{"data": attendances})
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count attendances"})
+		return
+	}
+
+	query.Offset(offset).Limit(limit).Order("id desc").Find(&attendances)
+	c.JSON(http.StatusOK, gin.H{
+		"data": attendances,
+		"meta": gin.H{
+			"offset": offset,
+			"limit":  limit,
+			"total":  total,
+			"count":  len(attendances),
+		},
+	})
 }
 
 func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {

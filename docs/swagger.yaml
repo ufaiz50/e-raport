@@ -403,6 +403,16 @@ paths:
     get:
       description: 'Get grade list with optional filters: student_id, semester, academic_year'
       parameters:
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
       - description: Student ID
         in: query
         name: student_id

@@ -339,6 +339,20 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Limit for pagination",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Student ID",
                         "name": "student_id",
                         "in": "query"

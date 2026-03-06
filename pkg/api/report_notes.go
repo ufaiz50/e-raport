@@ -19,8 +19,13 @@ func NewReportNoteRepository(db database.Database, ctx *context.Context) *report
 }
 
 func (r *reportNoteRepository) FindReportNotes(c *gin.Context) {
+	offset, limit, ok := parsePagination(c)
+	if !ok {
+		return
+	}
+
 	var notes []models.ReportNote
-	query := r.DB
+	query := r.DB.Model(&models.ReportNote{})
 	if studentID := c.Query("student_id"); studentID != "" {
 		query = query.Where("student_id = ?", studentID)
 	}
@@ -30,8 +35,23 @@ func (r *reportNoteRepository) FindReportNotes(c *gin.Context) {
 	if academicYear := c.Query("academic_year"); academicYear != "" {
 		query = query.Where("academic_year = ?", academicYear)
 	}
-	query.Order("id desc").Find(&notes)
-	c.JSON(http.StatusOK, gin.H{"data": notes})
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count report notes"})
+		return
+	}
+
+	query.Offset(offset).Limit(limit).Order("id desc").Find(&notes)
+	c.JSON(http.StatusOK, gin.H{
+		"data": notes,
+		"meta": gin.H{
+			"offset": offset,
+			"limit":  limit,
+			"total":  total,
+			"count":  len(notes),
+		},
+	})
 }
 
 func (r *reportNoteRepository) UpsertReportNote(c *gin.Context) {

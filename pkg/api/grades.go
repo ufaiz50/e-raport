@@ -37,13 +37,20 @@ func computeFinalScore(knowledge, skill float64) float64 {
 // @Tags grades
 // @Security ApiKeyAuth
 // @Produce json
+// @Param offset query int false "Offset for pagination" default(0)
+// @Param limit query int false "Limit for pagination" default(10)
 // @Param student_id query int false "Student ID"
 // @Param semester query int false "Semester"
 // @Param academic_year query string false "Academic year"
 // @Success 200 {array} models.Grade "Successfully retrieved list of grades"
 // @Router /grades [get]
 func (r *gradeRepository) FindGrades(c *gin.Context) {
-	query := r.DB
+	offset, limit, ok := parsePagination(c)
+	if !ok {
+		return
+	}
+
+	query := r.DB.Model(&models.Grade{})
 
 	if studentID := c.Query("student_id"); studentID != "" {
 		query = query.Where("student_id = ?", studentID)
@@ -55,13 +62,27 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 		query = query.Where("academic_year = ?", academicYear)
 	}
 
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count grades"})
+		return
+	}
+
 	var grades []models.Grade
-	if err := query.Order("book_id asc").Find(&grades).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Order("book_id asc").Find(&grades).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch grades"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": grades})
+	c.JSON(http.StatusOK, gin.H{
+		"data": grades,
+		"meta": gin.H{
+			"offset": offset,
+			"limit":  limit,
+			"total":  total,
+			"count":  len(grades),
+		},
+	})
 }
 
 // CreateGrade godoc

@@ -83,6 +83,16 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		return
 	}
 
+	if offset < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset format"})
+		return
+	}
+
+	if limit <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit format"})
+		return
+	}
+
 	// Create a cache key based on query params
 	cacheKey := "books_offset_" + offsetQuery + "_limit_" + limitQuery
 
@@ -94,7 +104,15 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unmarshal cached data"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"data": books})
+		c.JSON(http.StatusOK, gin.H{
+			"data": books,
+			"meta": gin.H{
+				"offset": offset,
+				"limit":  limit,
+				"total":  len(books),
+				"count":  len(books),
+			},
+		})
 		return
 	}
 
@@ -121,7 +139,15 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": books})
+	c.JSON(http.StatusOK, gin.H{
+		"data": books,
+		"meta": gin.H{
+			"offset": offset,
+			"limit":  limit,
+			"total":  len(books),
+			"count":  len(books),
+		},
+	})
 }
 
 // CreateBook godoc
