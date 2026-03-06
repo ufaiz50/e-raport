@@ -87,7 +87,7 @@ func TestFindBooks(t *testing.T) {
 
 	books := []models.Book{{Title: "Book One", Author: "Author One"}}
 	cachedData, _ := json.Marshal(books)
-	mockCache.EXPECT().Get(ctx, "books_offset_0_limit_10").Return(redis.NewStringResult(string(cachedData), nil))
+	mockCache.EXPECT().Get(ctx, "books_school_1_offset_0_limit_10").Return(redis.NewStringResult(string(cachedData), nil))
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/books?offset=0&limit=10", nil)
@@ -130,9 +130,9 @@ func TestCreateBook(t *testing.T) {
 	})
 
 	// Set up cache mock to simulate key retrieval and deletion
-	keyPattern := "books_offset_*"
-	mockCache.EXPECT().Keys(ctx, keyPattern).Return(redis.NewStringSliceResult([]string{"books_offset_0_limit_10"}, nil))
-	mockCache.EXPECT().Del(ctx, "books_offset_0_limit_10").Return(redis.NewIntResult(1, nil))
+	keyPattern := "books_school_1_*"
+	mockCache.EXPECT().Keys(ctx, keyPattern).Return(redis.NewStringSliceResult([]string{"books_school_1_offset_0_limit_10"}, nil))
+	mockCache.EXPECT().Del(ctx, "books_school_1_offset_0_limit_10").Return(redis.NewIntResult(1, nil))
 
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("POST", "/books", bytes.NewBuffer(requestBody))
@@ -173,7 +173,7 @@ func TestFindBook(t *testing.T) {
 
 	// Mock the Where method
 	mockDB.EXPECT().
-		Where("id = ?", "1").
+		Where("id = ? AND school_id = ?", "1", uint(1)).
 		DoAndReturn(func(query interface{}, args ...interface{}) database.Database {
 			// Return mockDB to allow method chaining
 			return mockDB
@@ -239,7 +239,7 @@ func TestDeleteBook(t *testing.T) {
 
 	// Mock Where to return the existingBook for chaining
 	mockDB.EXPECT().
-		Where("id = ?", "1").
+		Where("id = ? AND school_id = ?", "1", uint(1)).
 		Return(mockDB).Times(1)
 
 	// Mock First to load the existingBook and return mockDB

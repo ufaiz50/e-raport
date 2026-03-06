@@ -19,6 +19,11 @@ func NewAttendanceRepository(db database.Database, ctx *context.Context) *attend
 }
 
 func (r *attendanceRepository) FindAttendances(c *gin.Context) {
+	schoolID, role, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	offset, limit, ok := parsePagination(c)
 	if !ok {
 		return
@@ -26,6 +31,9 @@ func (r *attendanceRepository) FindAttendances(c *gin.Context) {
 
 	var attendances []models.Attendance
 	query := r.DB.Model(&models.Attendance{})
+	if role != "super_admin" {
+		query = query.Where("school_id = ?", *schoolID)
+	}
 	if studentID := c.Query("student_id"); studentID != "" {
 		query = query.Where("student_id = ?", studentID)
 	}
@@ -55,6 +63,11 @@ func (r *attendanceRepository) FindAttendances(c *gin.Context) {
 }
 
 func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var input models.UpsertAttendance
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -62,15 +75,15 @@ func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
 	}
 
 	var student models.Student
-	if err := r.DB.Where("id = ?", input.StudentID).First(&student).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", input.StudentID, *schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "student not found"})
 		return
 	}
 
 	var attendance models.Attendance
-	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", input.StudentID, input.Semester, input.AcademicYear).First(&attendance).Error(); err != nil {
+	if err := r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, input.StudentID, input.Semester, input.AcademicYear).First(&attendance).Error(); err != nil {
 		attendance = models.Attendance{
-			SchoolID:       input.SchoolID,
+			SchoolID:       schoolID,
 			StudentID:      input.StudentID,
 			Semester:       input.Semester,
 			AcademicYear:   input.AcademicYear,
@@ -84,7 +97,7 @@ func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
 	}
 
 	r.DB.Model(&attendance).Updates(models.Attendance{
-		SchoolID:       input.SchoolID,
+		SchoolID:       schoolID,
 		SickDays:       input.SickDays,
 		PermissionDays: input.PermissionDays,
 		AbsentDays:     input.AbsentDays,

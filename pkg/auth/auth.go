@@ -13,6 +13,8 @@ import (
 // Claims struct to be encoded to JWT
 type Claims struct {
 	Username string `json:"username"`
+	Role     string `json:"role"`
+	SchoolID *uint  `json:"school_id,omitempty"`
 	jwt.StandardClaims
 }
 
@@ -23,15 +25,20 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func GenerateToken(username string) (string, error) {
+func GenerateToken(username string, role string, schoolID *uint) (string, error) {
 	// The expiration time after which the token will be invalid.
 	expirationTime := time.Now().Add(5 * time.Minute).Unix()
 
 	// Create the JWT claims, which includes the username and expiration time
-	claims := &jwt.StandardClaims{
-		// In JWT, the expiry time is expressed as unix milliseconds
-		ExpiresAt: expirationTime,
-		Issuer:    username,
+	claims := &Claims{
+		Username: username,
+		Role:     role,
+		SchoolID: schoolID,
+		StandardClaims: jwt.StandardClaims{
+			// In JWT, the expiry time is expressed as unix milliseconds
+			ExpiresAt: expirationTime,
+			Issuer:    username,
+		},
 	}
 
 	// Declare the token with the algorithm used for signing, and the claims

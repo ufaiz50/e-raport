@@ -15,7 +15,7 @@ func TestHashPassword(t *testing.T) {
 
 func TestGenerateToken(t *testing.T) {
 	user := "chud"
-	token, err := GenerateToken(user)
+	token, err := GenerateToken(user, "guru", nil)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, token)
 }

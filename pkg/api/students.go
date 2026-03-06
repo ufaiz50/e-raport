@@ -37,19 +37,24 @@ func NewStudentRepository(db database.Database, ctx *context.Context) *studentRe
 // @Success 200 {array} models.Student "Successfully retrieved list of students"
 // @Router /students [get]
 func (r *studentRepository) FindStudents(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	offset, limit, ok := parsePagination(c)
 	if !ok {
 		return
 	}
 
 	var total int64
-	if err := r.DB.Model(&models.Student{}).Count(&total).Error; err != nil {
+	if err := r.DB.Where("school_id = ?", *schoolID).Model(&models.Student{}).Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count students"})
 		return
 	}
 
 	var students []models.Student
-	r.DB.Offset(offset).Limit(limit).Order("id asc").Find(&students)
+	r.DB.Where("school_id = ?", *schoolID).Offset(offset).Limit(limit).Order("id asc").Find(&students)
 	c.JSON(http.StatusOK, gin.H{
 		"data": students,
 		"meta": gin.H{
@@ -75,16 +80,21 @@ func (r *studentRepository) FindStudents(c *gin.Context) {
 // @Failure 401 {string} string "Unauthorized"
 // @Router /students [post]
 func (r *studentRepository) CreateStudent(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var input models.CreateStudent
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: input.SchoolID}
+	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: schoolID}
 	if input.ClassID != nil {
 		var class models.Class
-		if err := r.DB.Where("id = ?", *input.ClassID).First(&class).Error(); err != nil {
+		if err := r.DB.Where("id = ? AND school_id = ?", *input.ClassID, *schoolID).First(&class).Error(); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
 			return
 		}
@@ -105,8 +115,13 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 // @Failure 404 {string} string "Student not found"
 // @Router /students/{id} [get]
 func (r *studentRepository) FindStudent(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var student models.Student
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&student).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}
@@ -127,10 +142,15 @@ func (r *studentRepository) FindStudent(c *gin.Context) {
 // @Failure 404 {string} string "Student not found"
 // @Router /students/{id} [put]
 func (r *studentRepository) UpdateStudent(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var student models.Student
 	var input models.UpdateStudent
 
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&student).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}
@@ -142,13 +162,13 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 
 	if input.ClassID != nil {
 		var class models.Class
-		if err := r.DB.Where("id = ?", *input.ClassID).First(&class).Error(); err != nil {
+		if err := r.DB.Where("id = ? AND school_id = ?", *input.ClassID, *schoolID).First(&class).Error(); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
 			return
 		}
 	}
 
-	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: input.SchoolID, ClassID: input.ClassID})
+	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: schoolID, ClassID: input.ClassID})
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 
@@ -163,8 +183,13 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 // @Failure 404 {string} string "Student not found"
 // @Router /students/{id} [delete]
 func (r *studentRepository) DeleteStudent(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var student models.Student
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&student).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}

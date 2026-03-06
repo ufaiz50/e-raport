@@ -1063,6 +1063,9 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
+                "school_id": {
+                    "type": "integer"
+                },
                 "username": {
                     "type": "string"
                 }

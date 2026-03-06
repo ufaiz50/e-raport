@@ -50,7 +50,7 @@ func NewUserRepository(db database.Database, ctx *context.Context) *userReposito
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /login [post]
 func (r *userRepository) LoginHandler(c *gin.Context) {
-	var incomingUser models.User
+	var incomingUser models.LoginUser
 	var dbUser models.User
 
 	// Get JSON body
@@ -60,7 +60,11 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 	}
 
 	// Fetch the user from the database
-	if err := r.DB.Where("username = ?", incomingUser.Username).First(&dbUser).Error(); err != nil {
+	query := r.DB.Where("username = ?", incomingUser.Username)
+	if incomingUser.SchoolID != nil {
+		query = query.Where("school_id = ?", *incomingUser.SchoolID)
+	}
+	if err := query.First(&dbUser).Error(); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		} else {
@@ -76,7 +80,7 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 	}
 
 	// Generate JWT token
-	token, err := auth.GenerateToken(dbUser.Username)
+	token, err := auth.GenerateToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return

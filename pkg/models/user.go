@@ -5,12 +5,13 @@ import "time"
 type LoginUser struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+	SchoolID *uint  `json:"school_id"`
 }
 
 type RegisterUser struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	Role     string `json:"role" binding:"omitempty,oneof=admin guru wali_kelas"`
+	Role     string `json:"role" binding:"omitempty,oneof=super_admin admin guru wali_kelas"`
 	SchoolID *uint  `json:"school_id"`
 }
 

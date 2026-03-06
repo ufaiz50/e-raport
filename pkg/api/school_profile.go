@@ -17,8 +17,17 @@ func NewSchoolProfileRepository(db database.Database) *schoolProfileRepository {
 }
 
 func (r *schoolProfileRepository) Get(c *gin.Context) {
+	schoolID, role, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var profile models.SchoolProfile
-	if err := r.DB.Order("id asc").First(&profile).Error; err != nil {
+	query := r.DB.Order("id asc")
+	if role != "super_admin" {
+		query = query.Where("school_id = ?", *schoolID)
+	}
+	if err := query.First(&profile).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "school profile not found"})
 		return
 	}
@@ -26,6 +35,11 @@ func (r *schoolProfileRepository) Get(c *gin.Context) {
 }
 
 func (r *schoolProfileRepository) Upsert(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var input models.UpsertSchoolProfile
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -33,9 +47,9 @@ func (r *schoolProfileRepository) Upsert(c *gin.Context) {
 	}
 
 	var profile models.SchoolProfile
-	if err := r.DB.Order("id asc").First(&profile).Error; err != nil {
+	if err := r.DB.Where("school_id = ?", *schoolID).Order("id asc").First(&profile).Error; err != nil {
 		profile = models.SchoolProfile{
-			SchoolID:       input.SchoolID,
+			SchoolID:       schoolID,
 			SchoolName:     input.SchoolName,
 			NPSN:           input.NPSN,
 			Address:        input.Address,
@@ -53,7 +67,7 @@ func (r *schoolProfileRepository) Upsert(c *gin.Context) {
 	}
 
 	if err := r.DB.Model(&profile).Updates(models.SchoolProfile{
-		SchoolID:       input.SchoolID,
+		SchoolID:       schoolID,
 		SchoolName:     input.SchoolName,
 		NPSN:           input.NPSN,
 		Address:        input.Address,

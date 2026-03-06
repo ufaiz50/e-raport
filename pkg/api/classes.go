@@ -29,19 +29,24 @@ func NewClassRepository(db database.Database, ctx *context.Context) *classReposi
 // @Success 200 {array} models.Class "Successfully retrieved list of classes"
 // @Router /classes [get]
 func (r *classRepository) FindClasses(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	offset, limit, ok := parsePagination(c)
 	if !ok {
 		return
 	}
 
 	var total int64
-	if err := r.DB.Model(&models.Class{}).Count(&total).Error; err != nil {
+	if err := r.DB.Where("school_id = ?", *schoolID).Model(&models.Class{}).Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count classes"})
 		return
 	}
 
 	var classes []models.Class
-	r.DB.Offset(offset).Limit(limit).Order("name asc").Find(&classes)
+	r.DB.Where("school_id = ?", *schoolID).Offset(offset).Limit(limit).Order("name asc").Find(&classes)
 	c.JSON(http.StatusOK, gin.H{
 		"data": classes,
 		"meta": gin.H{
@@ -54,12 +59,17 @@ func (r *classRepository) FindClasses(c *gin.Context) {
 }
 
 func (r *classRepository) CreateClass(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var input models.CreateClass
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	class := models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: input.SchoolID}
+	class := models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: schoolID}
 	if err := r.DB.Create(&class).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create class"})
 		return
@@ -68,8 +78,13 @@ func (r *classRepository) CreateClass(c *gin.Context) {
 }
 
 func (r *classRepository) UpdateClass(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var class models.Class
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&class).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&class).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class not found"})
 		return
 	}
@@ -78,7 +93,7 @@ func (r *classRepository) UpdateClass(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := r.DB.Model(&class).Updates(models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: input.SchoolID}).Error; err != nil {
+	if err := r.DB.Model(&class).Updates(models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: schoolID}).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update class"})
 		return
 	}
@@ -86,8 +101,13 @@ func (r *classRepository) UpdateClass(c *gin.Context) {
 }
 
 func (r *classRepository) DeleteClass(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var class models.Class
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&class).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&class).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class not found"})
 		return
 	}

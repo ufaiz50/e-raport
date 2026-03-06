@@ -59,7 +59,7 @@ func TestFindStudent(t *testing.T) {
 
 	expected := models.Student{ID: 1, Name: "Umar", Email: "umar@example.com", Type: "junior"}
 
-	mockDB.EXPECT().Where("id = ?", "1").Return(mockDB)
+	mockDB.EXPECT().Where("id = ? AND school_id = ?", "1", uint(1)).Return(mockDB)
 	mockDB.EXPECT().First(gomock.Any()).DoAndReturn(func(dest interface{}, conds ...interface{}) database.Database {
 		if s, ok := dest.(*models.Student); ok {
 			*s = expected

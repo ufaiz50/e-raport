@@ -45,12 +45,20 @@ func computeFinalScore(knowledge, skill float64) float64 {
 // @Success 200 {array} models.Grade "Successfully retrieved list of grades"
 // @Router /grades [get]
 func (r *gradeRepository) FindGrades(c *gin.Context) {
+	schoolID, role, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	offset, limit, ok := parsePagination(c)
 	if !ok {
 		return
 	}
 
 	query := r.DB.Model(&models.Grade{})
+	if role != "super_admin" {
+		query = query.Where("school_id = ?", *schoolID)
+	}
 
 	if studentID := c.Query("student_id"); studentID != "" {
 		query = query.Where("student_id = ?", studentID)
@@ -98,6 +106,11 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 // @Failure 400 {string} string "Bad Request"
 // @Router /grades [post]
 func (r *gradeRepository) CreateGrade(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var input models.CreateGrade
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -105,19 +118,19 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 	}
 
 	var student models.Student
-	if err := r.DB.Where("id = ?", input.StudentID).First(&student).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", input.StudentID, *schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "student not found"})
 		return
 	}
 
 	var book models.Book
-	if err := r.DB.Where("id = ?", input.BookID).First(&book).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", input.BookID, *schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "subject/book not found"})
 		return
 	}
 
 	grade := models.Grade{
-		SchoolID:       input.SchoolID,
+		SchoolID:       schoolID,
 		StudentID:      input.StudentID,
 		BookID:         input.BookID,
 		Semester:       input.Semester,
@@ -147,8 +160,13 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 // @Success 200 {object} models.Grade "Successfully updated grade"
 // @Router /grades/{id} [put]
 func (r *gradeRepository) UpdateGrade(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var grade models.Grade
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&grade).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&grade).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "grade not found"})
 		return
 	}
@@ -168,9 +186,7 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	if input.Notes != nil {
 		grade.Notes = *input.Notes
 	}
-	if input.SchoolID != nil {
-		grade.SchoolID = input.SchoolID
-	}
+	grade.SchoolID = schoolID
 	grade.FinalScore = computeFinalScore(grade.KnowledgeScore, grade.SkillScore)
 
 	if err := r.DB.Model(&grade).Updates(grade).Error; err != nil {
@@ -190,8 +206,13 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 // @Success 204 {string} string "Successfully deleted grade"
 // @Router /grades/{id} [delete]
 func (r *gradeRepository) DeleteGrade(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	var grade models.Grade
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&grade).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&grade).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "grade not found"})
 		return
 	}
