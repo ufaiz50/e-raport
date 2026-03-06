@@ -159,6 +159,10 @@ func predicate(score float64) string {
 
 // PrintReportCard godoc
 func (r *reportRepository) PrintReportCard(c *gin.Context) {
+	if _, _, ok := requireTenant(c); !ok {
+		return
+	}
+
 	studentID, err := strconv.Atoi(c.Param("student_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
@@ -182,6 +186,10 @@ func (r *reportRepository) PrintReportCard(c *gin.Context) {
 }
 
 func (r *reportRepository) PrintReportCardPDF(c *gin.Context) {
+	if _, _, ok := requireTenant(c); !ok {
+		return
+	}
+
 	studentID, err := strconv.Atoi(c.Param("student_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
@@ -204,6 +212,11 @@ func (r *reportRepository) PrintReportCardPDF(c *gin.Context) {
 }
 
 func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
+	schoolID, role, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	classID, err := strconv.Atoi(c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid class_id"})
@@ -222,7 +235,11 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 	}
 
 	var students []models.Student
-	if err := r.DB.Where("class_id = ?", classID).Order("name asc").Find(&students).Error; err != nil || len(students) == 0 {
+	query := r.DB.Where("class_id = ?", classID)
+	if role != "super_admin" {
+		query = query.Where("school_id = ?", *schoolID)
+	}
+	if err := query.Order("name asc").Find(&students).Error; err != nil || len(students) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class students not found"})
 		return
 	}
@@ -247,6 +264,11 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 }
 
 func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
 	studentID, err := strconv.Atoi(c.Param("student_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
@@ -264,7 +286,7 @@ func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
 	}
 
 	var grades []models.Grade
-	r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).Find(&grades)
+	r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, studentID, semester, academicYear).Find(&grades)
 	if len(grades) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot finalize without grades"})
 		return
@@ -272,8 +294,9 @@ func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
 
 	now := time.Now()
 	var reportCard models.ReportCard
-	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).First(&reportCard).Error(); err != nil {
+	if err := r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, studentID, semester, academicYear).First(&reportCard).Error(); err != nil {
 		reportCard = models.ReportCard{
+			SchoolID:     schoolID,
 			StudentID:    uint(studentID),
 			Semester:     semester,
 			AcademicYear: academicYear,
@@ -344,6 +367,11 @@ func (r *reportRepository) renderStudentReportPDF(pdf *gofpdf.Fpdf, view reportV
 }
 
 func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (reportView, int, error) {
+	schoolID, role, ok := requireTenant(c)
+	if !ok {
+		return reportView{}, http.StatusUnauthorized, fmt.Errorf("missing school context")
+	}
+
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
 		return reportView{}, http.StatusBadRequest, err
@@ -354,7 +382,11 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}
 
 	var student models.Student
-	if err := r.DB.Where("id = ?", studentID).First(&student).Error(); err != nil {
+	studentQuery := r.DB.Where("id = ?", studentID)
+	if role != "super_admin" {
+		studentQuery = studentQuery.Where("school_id = ?", *schoolID)
+	}
+	if err := studentQuery.First(&student).Error(); err != nil {
 		return reportView{}, http.StatusNotFound, fmt.Errorf("student not found")
 	}
 
@@ -362,7 +394,11 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	homeroom := "__________________"
 	if student.ClassID != nil {
 		var class models.Class
-		if err := r.DB.Where("id = ?", *student.ClassID).First(&class).Error(); err == nil {
+		classQuery := r.DB.Where("id = ?", *student.ClassID)
+		if role != "super_admin" {
+			classQuery = classQuery.Where("school_id = ?", *schoolID)
+		}
+		if err := classQuery.First(&class).Error(); err == nil {
 			className = class.Name
 			if class.Homeroom != "" {
 				homeroom = class.Homeroom
@@ -371,7 +407,11 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}
 
 	var grades []models.Grade
-	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).Order("book_id asc").Find(&grades).Error; err != nil {
+	gradesQuery := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear)
+	if role != "super_admin" {
+		gradesQuery = gradesQuery.Where("school_id = ?", *schoolID)
+	}
+	if err := gradesQuery.Order("book_id asc").Find(&grades).Error; err != nil {
 		return reportView{}, http.StatusInternalServerError, fmt.Errorf("failed to fetch report data")
 	}
 	if len(grades) == 0 {
@@ -383,7 +423,11 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	for i, g := range grades {
 		subject := fmt.Sprintf("Mapel #%d", g.BookID)
 		var book models.Book
-		if err := r.DB.Where("id = ?", g.BookID).First(&book).Error(); err == nil {
+		bookQuery := r.DB.Where("id = ?", g.BookID)
+		if role != "super_admin" {
+			bookQuery = bookQuery.Where("school_id = ?", *schoolID)
+		}
+		if err := bookQuery.First(&book).Error(); err == nil {
 			subject = book.Title
 		}
 		rows = append(rows, reportRow{No: i + 1, Subject: subject, KnowledgeScore: g.KnowledgeScore, SkillScore: g.SkillScore, FinalScore: g.FinalScore, Predicate: predicate(g.FinalScore), Notes: g.Notes})
@@ -393,13 +437,17 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 
 	rank := 1
 	if student.ClassID != nil {
-		rank = r.computeRank(*student.ClassID, uint(studentID), semester, academicYear)
+		rank = r.computeRank(*student.ClassID, uint(studentID), semester, academicYear, schoolID, role)
 	}
 
 	reportStatus := string(models.ReportCardDraft)
 	finalizedAtStr := ""
 	var rc models.ReportCard
-	if err := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).First(&rc).Error(); err == nil {
+	rcQuery := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear)
+	if role != "super_admin" {
+		rcQuery = rcQuery.Where("school_id = ?", *schoolID)
+	}
+	if err := rcQuery.First(&rc).Error(); err == nil {
 		reportStatus = string(rc.Status)
 		if rc.FinalizedAt != nil {
 			finalizedAtStr = rc.FinalizedAt.Format("2006-01-02 15:04")
@@ -407,13 +455,25 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}
 
 	school := models.SchoolProfile{SchoolName: "E-Raport Internal School"}
-	_ = r.DB.Order("id asc").First(&school).Error
+	schoolQuery := r.DB.Order("id asc")
+	if role != "super_admin" {
+		schoolQuery = schoolQuery.Where("school_id = ?", *schoolID)
+	}
+	_ = schoolQuery.First(&school).Error
 
 	attendance := models.Attendance{}
-	_ = r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).First(&attendance).Error()
+	attendanceQuery := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear)
+	if role != "super_admin" {
+		attendanceQuery = attendanceQuery.Where("school_id = ?", *schoolID)
+	}
+	_ = attendanceQuery.First(&attendance).Error()
 
 	note := models.ReportNote{HomeroomComment: "-"}
-	_ = r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear).First(&note).Error()
+	noteQuery := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", studentID, semester, academicYear)
+	if role != "super_admin" {
+		noteQuery = noteQuery.Where("school_id = ?", *schoolID)
+	}
+	_ = noteQuery.First(&note).Error()
 
 	verificationID := fmt.Sprintf("ERAPORT-%d-%d-%s", studentID, semester, academicYear)
 
@@ -442,9 +502,13 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}, http.StatusOK, nil
 }
 
-func (r *reportRepository) computeRank(classID uint, studentID uint, semester int, academicYear string) int {
+func (r *reportRepository) computeRank(classID uint, studentID uint, semester int, academicYear string, schoolID *uint, role string) int {
 	var students []models.Student
-	r.DB.Where("class_id = ?", classID).Find(&students)
+	query := r.DB.Where("class_id = ?", classID)
+	if role != "super_admin" && schoolID != nil {
+		query = query.Where("school_id = ?", *schoolID)
+	}
+	query.Find(&students)
 	type score struct {
 		studentID uint
 		avg       float64
@@ -452,7 +516,11 @@ func (r *reportRepository) computeRank(classID uint, studentID uint, semester in
 	list := make([]score, 0, len(students))
 	for _, s := range students {
 		var grades []models.Grade
-		r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", s.ID, semester, academicYear).Find(&grades)
+		gradesQuery := r.DB.Where("student_id = ? AND semester = ? AND academic_year = ?", s.ID, semester, academicYear)
+		if role != "super_admin" && schoolID != nil {
+			gradesQuery = gradesQuery.Where("school_id = ?", *schoolID)
+		}
+		gradesQuery.Find(&grades)
 		if len(grades) == 0 {
 			continue
 		}

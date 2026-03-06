@@ -628,6 +628,59 @@ paths:
       summary: Register a new user
       tags:
       - user
+  /schools:
+    get:
+      description: Get all schools (super admin only)
+      parameters:
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.School'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Get all schools
+      tags:
+      - schools
+    post:
+      consumes:
+      - application/json
+      description: Create a new school (super admin only)
+      parameters:
+      - description: School object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.School'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.School'
+      security:
+      - ApiKeyAuth: []
+      - JwtAuth: []
+      summary: Create school
+      tags:
+      - schools
   /students:
     get:
       description: Get a list of all students with optional pagination
