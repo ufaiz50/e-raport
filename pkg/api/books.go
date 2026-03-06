@@ -65,6 +65,15 @@ func (r *bookRepository) Healthcheck(c *gin.Context) {
 // @Router /books [get]
 func (r *bookRepository) FindBooks(c *gin.Context) {
 	var books []models.Book
+	type booksCachePayload struct {
+		Data []models.Book `json:"data"`
+		Meta struct {
+			Offset int `json:"offset"`
+			Limit  int `json:"limit"`
+			Total  int `json:"total"`
+			Count  int `json:"count"`
+		} `json:"meta"`
+	}
 
 	// Get query params
 	offsetQuery := c.DefaultQuery("offset", "0")
@@ -99,11 +108,26 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 	// Try fetching the data from Redis first
 	cachedBooks, err := r.RedisClient.Get(*r.Ctx, cacheKey).Result()
 	if err == nil {
-		err := json.Unmarshal([]byte(cachedBooks), &books)
-		if err != nil {
+		var cachedPayload booksCachePayload
+		if err := json.Unmarshal([]byte(cachedBooks), &cachedPayload); err == nil && len(cachedPayload.Data) > 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"data": cachedPayload.Data,
+				"meta": gin.H{
+					"offset": cachedPayload.Meta.Offset,
+					"limit":  cachedPayload.Meta.Limit,
+					"total":  cachedPayload.Meta.Total,
+					"count":  cachedPayload.Meta.Count,
+				},
+			})
+			return
+		}
+
+		// Backward compatibility for older cache format ([]Book only)
+		if err := json.Unmarshal([]byte(cachedBooks), &books); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unmarshal cached data"})
 			return
 		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"data": books,
 			"meta": gin.H{
@@ -115,6 +139,10 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		})
 		return
 	}
+
+	var allBooks []models.Book
+	r.DB.Find(&allBooks)
+	total := len(allBooks)
 
 	// If cache missed, fetch data from the database
 	r.DB.Offset(offset).Limit(limit).Find(&books)
@@ -128,7 +156,13 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 	}
 
 	// Serialize books object and store it in Redis
-	serializedBooks, err := json.Marshal(books)
+	cachePayload := booksCachePayload{Data: books}
+	cachePayload.Meta.Offset = offset
+	cachePayload.Meta.Limit = limit
+	cachePayload.Meta.Total = total
+	cachePayload.Meta.Count = len(books)
+
+	serializedBooks, err := json.Marshal(cachePayload)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal data"})
 		return
@@ -144,7 +178,7 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		"meta": gin.H{
 			"offset": offset,
 			"limit":  limit,
-			"total":  len(books),
+			"total":  total,
 			"count":  len(books),
 		},
 	})
