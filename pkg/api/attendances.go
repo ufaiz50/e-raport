@@ -19,7 +19,7 @@ func NewAttendanceRepository(db database.Database, ctx *context.Context) *attend
 }
 
 func (r *attendanceRepository) FindAttendances(c *gin.Context) {
-	schoolID, role, ok := requireTenant(c)
+	schoolID, _, ok := requireTenant(c)
 	if !ok {
 		return
 	}
@@ -31,7 +31,7 @@ func (r *attendanceRepository) FindAttendances(c *gin.Context) {
 
 	var attendances []models.Attendance
 	query := r.DB.Model(&models.Attendance{})
-	if role != "super_admin" {
+	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
 	if studentID := c.Query("student_id"); studentID != "" {

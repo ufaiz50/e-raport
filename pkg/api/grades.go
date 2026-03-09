@@ -45,7 +45,7 @@ func computeFinalScore(knowledge, skill float64) float64 {
 // @Success 200 {array} models.Grade "Successfully retrieved list of grades"
 // @Router /grades [get]
 func (r *gradeRepository) FindGrades(c *gin.Context) {
-	schoolID, role, ok := requireTenant(c)
+	schoolID, _, ok := requireTenant(c)
 	if !ok {
 		return
 	}
@@ -56,7 +56,7 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 	}
 
 	query := r.DB.Model(&models.Grade{})
-	if role != "super_admin" {
+	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
 

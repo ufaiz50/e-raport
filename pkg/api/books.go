@@ -107,8 +107,12 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		return
 	}
 
-	// Create a cache key based on query params
-	cacheKey := "books_school_" + strconv.Itoa(int(*schoolID)) + "_offset_" + offsetQuery + "_limit_" + limitQuery
+	// Create a cache key based on query params and effective school scope
+	scope := "all"
+	if schoolID != nil {
+		scope = strconv.Itoa(int(*schoolID))
+	}
+	cacheKey := "books_school_" + scope + "_offset_" + offsetQuery + "_limit_" + limitQuery
 
 	// Try fetching the data from Redis first
 	cachedBooks, err := r.RedisClient.Get(*r.Ctx, cacheKey).Result()
@@ -146,15 +150,27 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 	}
 
 	var allBooks []models.Book
-	r.DB.Where("school_id = ?", *schoolID).Find(&allBooks)
+	countQuery := r.DB
+	if schoolID != nil {
+		countQuery = countQuery.Where("school_id = ?", *schoolID)
+	}
+	countQuery.Find(&allBooks)
 	total := len(allBooks)
 
 	// If cache missed, fetch data from the database
-	r.DB.Where("school_id = ?", *schoolID).Offset(offset).Limit(limit).Find(&books)
+	dataQuery := r.DB.Offset(offset).Limit(limit)
+	if schoolID != nil {
+		dataQuery = dataQuery.Where("school_id = ?", *schoolID)
+	}
+	dataQuery.Find(&books)
 	for i := range books {
 		if books[i].StudentID != nil {
 			var student models.Student
-			if err := r.DB.Where("id = ? AND school_id = ?", *books[i].StudentID, *schoolID).First(&student).Error(); err == nil {
+			studentQuery := r.DB.Where("id = ?", *books[i].StudentID)
+			if schoolID != nil {
+				studentQuery = studentQuery.Where("school_id = ?", *schoolID)
+			}
+			if err := studentQuery.First(&student).Error(); err == nil {
 				books[i].Student = &student
 			}
 		}

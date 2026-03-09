@@ -39,14 +39,23 @@ func (r *classRepository) FindClasses(c *gin.Context) {
 		return
 	}
 
+	query := r.DB.Model(&models.Class{})
+	if schoolID != nil {
+		query = query.Where("school_id = ?", *schoolID)
+	}
+
 	var total int64
-	if err := r.DB.Where("school_id = ?", *schoolID).Model(&models.Class{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count classes"})
 		return
 	}
 
 	var classes []models.Class
-	r.DB.Where("school_id = ?", *schoolID).Offset(offset).Limit(limit).Order("name asc").Find(&classes)
+	dataQuery := r.DB.Offset(offset).Limit(limit).Order("name asc")
+	if schoolID != nil {
+		dataQuery = dataQuery.Where("school_id = ?", *schoolID)
+	}
+	dataQuery.Find(&classes)
 	c.JSON(http.StatusOK, gin.H{
 		"data": classes,
 		"meta": gin.H{

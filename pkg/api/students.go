@@ -47,14 +47,23 @@ func (r *studentRepository) FindStudents(c *gin.Context) {
 		return
 	}
 
+	query := r.DB.Model(&models.Student{})
+	if schoolID != nil {
+		query = query.Where("school_id = ?", *schoolID)
+	}
+
 	var total int64
-	if err := r.DB.Where("school_id = ?", *schoolID).Model(&models.Student{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count students"})
 		return
 	}
 
 	var students []models.Student
-	r.DB.Where("school_id = ?", *schoolID).Offset(offset).Limit(limit).Order("id asc").Find(&students)
+	dataQuery := r.DB.Offset(offset).Limit(limit).Order("id asc")
+	if schoolID != nil {
+		dataQuery = dataQuery.Where("school_id = ?", *schoolID)
+	}
+	dataQuery.Find(&students)
 	c.JSON(http.StatusOK, gin.H{
 		"data": students,
 		"meta": gin.H{

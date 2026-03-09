@@ -19,7 +19,7 @@ func NewReportNoteRepository(db database.Database, ctx *context.Context) *report
 }
 
 func (r *reportNoteRepository) FindReportNotes(c *gin.Context) {
-	schoolID, role, ok := requireTenant(c)
+	schoolID, _, ok := requireTenant(c)
 	if !ok {
 		return
 	}
@@ -31,7 +31,7 @@ func (r *reportNoteRepository) FindReportNotes(c *gin.Context) {
 
 	var notes []models.ReportNote
 	query := r.DB.Model(&models.ReportNote{})
-	if role != "super_admin" {
+	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
 	if studentID := c.Query("student_id"); studentID != "" {
