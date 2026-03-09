@@ -5,7 +5,6 @@ import "time"
 type LoginUser struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	SchoolID *uint  `json:"school_id"`
 }
 
 type RegisterUser struct {

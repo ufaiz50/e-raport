@@ -8,6 +8,7 @@ import (
 	"golang-rest-api-template/pkg/database"
 	"golang-rest-api-template/pkg/models"
 	"net/http"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -60,11 +61,7 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 	}
 
 	// Fetch the user from the database
-	query := r.DB.Where("username = ?", incomingUser.Username)
-	if incomingUser.SchoolID != nil {
-		query = query.Where("school_id = ?", *incomingUser.SchoolID)
-	}
-	if err := query.First(&dbUser).Error(); err != nil {
+	if err := r.DB.Where("username = ?", incomingUser.Username).First(&dbUser).Error(); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		} else {
@@ -110,6 +107,12 @@ func (r *userRepository) RegisterHandler(c *gin.Context) {
 		return
 	}
 
+	user.Username = strings.TrimSpace(user.Username)
+	if user.Username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username is required"})
+		return
+	}
+
 	// Hash the password
 	hashedPassword, err := auth.HashPassword(user.Password)
 	if err != nil {
@@ -121,6 +124,25 @@ func (r *userRepository) RegisterHandler(c *gin.Context) {
 	role := user.Role
 	if role == "" {
 		role = "guru"
+	}
+
+	if role != "super_admin" && user.SchoolID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "school_id is required for non-super_admin users"})
+		return
+	}
+
+	if role == "super_admin" {
+		// Keep super admin global (non-tenant) to avoid accidental tenant scoping.
+		user.SchoolID = nil
+	}
+
+	var existingUser models.User
+	if err := r.DB.Where("username = ?", user.Username).First(&existingUser).Error(); err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
 	}
 
 	newUser := models.User{Username: user.Username, Password: hashedPassword, Role: role, SchoolID: user.SchoolID}
