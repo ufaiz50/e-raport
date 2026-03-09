@@ -328,6 +328,76 @@ paths:
           schema: { $ref: '#/definitions/models.UpsertReportNote' }
       responses: { '200': { description: OK } }
 
+  /schools:
+    get:
+      tags: [schools]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List schools (super admin only)
+      parameters:
+        - in: query
+          name: offset
+          type: integer
+        - in: query
+          name: limit
+          type: integer
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items: { $ref: '#/definitions/models.School' }
+    post:
+      tags: [schools]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create school (super admin only)
+      parameters:
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.CreateSchool' }
+      responses:
+        '201':
+          description: Created
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/definitions/models.School' }
+
+  /schools/{id}:
+    put:
+      tags: [schools]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Update school (super admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.UpdateSchool' }
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/definitions/models.School' }
+    delete:
+      tags: [schools]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Delete school (super admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
+      responses: { '204': { description: No Content } }
+
   /school-profile:
     get:
       tags: [school-profile]
@@ -562,6 +632,29 @@ definitions:
       principal_nip: { type: string }
       headmaster_sign: { type: string }
       school_stamp: { type: string }
+
+  models.School:
+    type: object
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      code: { type: string }
+      address: { type: string }
+
+  models.CreateSchool:
+    type: object
+    required: [name]
+    properties:
+      name: { type: string }
+      code: { type: string }
+      address: { type: string }
+
+  models.UpdateSchool:
+    type: object
+    properties:
+      name: { type: string }
+      code: { type: string }
+      address: { type: string }
 
 securityDefinitions:
   ApiKeyAuth:
