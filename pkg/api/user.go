@@ -7,8 +7,11 @@ import (
 	"golang-rest-api-template/pkg/auth"
 	"golang-rest-api-template/pkg/database"
 	"golang-rest-api-template/pkg/models"
+	"io"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -19,6 +22,7 @@ import (
 type UserRepository interface {
 	LoginHandler(c *gin.Context)
 	RefreshTokenHandler(c *gin.Context)
+	LogoutHandler(c *gin.Context)
 	RegisterHandler(c *gin.Context)
 }
 
@@ -33,6 +37,42 @@ func NewUserRepository(db database.Database, ctx *context.Context) *userReposito
 		DB:  db,
 		Ctx: ctx,
 	}
+}
+
+func refreshCookieOptions() (maxAge int, secure bool, sameSite http.SameSite) {
+	maxAge = int((7 * 24 * time.Hour).Seconds())
+	secure = os.Getenv("COOKIE_SECURE") == "true"
+	sameSite = http.SameSiteLaxMode
+	if os.Getenv("COOKIE_SAMESITE") == "none" {
+		sameSite = http.SameSiteNoneMode
+	}
+	return
+}
+
+func setRefreshCookie(c *gin.Context, token string) {
+	maxAge, secure, sameSite := refreshCookieOptions()
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   maxAge,
+	})
+}
+
+func clearRefreshCookie(c *gin.Context) {
+	_, secure, sameSite := refreshCookieOptions()
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   -1,
+	})
 }
 
 // @BasePath /api/v1
@@ -89,17 +129,29 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": accessToken, "access_token": accessToken, "refresh_token": refreshToken})
+	setRefreshCookie(c, refreshToken)
+	c.JSON(http.StatusOK, gin.H{"token": accessToken, "access_token": accessToken})
 }
 
 func (r *userRepository) RefreshTokenHandler(c *gin.Context) {
 	var req models.RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	claims, err := auth.ParseRefreshToken(req.RefreshToken)
+	refreshToken := req.RefreshToken
+	if refreshToken == "" {
+		if cookie, err := c.Cookie("refresh_token"); err == nil {
+			refreshToken = cookie
+		}
+	}
+	if refreshToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing refresh token"})
+		return
+	}
+
+	claims, err := auth.ParseRefreshToken(refreshToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
 		return
@@ -117,13 +169,19 @@ func (r *userRepository) RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	refreshToken, err := auth.GenerateRefreshToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
+	refreshToken, err = auth.GenerateRefreshToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating refresh token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": accessToken, "access_token": accessToken, "refresh_token": refreshToken})
+	setRefreshCookie(c, refreshToken)
+	c.JSON(http.StatusOK, gin.H{"token": accessToken, "access_token": accessToken})
+}
+
+func (r *userRepository) LogoutHandler(c *gin.Context) {
+	clearRefreshCookie(c)
+	c.JSON(http.StatusOK, gin.H{"message": "logout successful"})
 }
 
 // RegisterHandler godoc
