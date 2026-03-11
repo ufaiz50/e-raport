@@ -16,8 +16,9 @@ func Cors() gin.HandlerFunc {
 			"http://localhost",
 			"http://localhost:3000",
 			"http://localhost:8001"},
-		AllowMethods: []string{"*"},
-		AllowHeaders: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization", "X-API-Key", "X-Requested-With"},
+		ExposeHeaders: []string{"Set-Cookie"},
 		//ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		//AllowOriginFunc: func(origin string) bool {
