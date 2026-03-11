@@ -40,3 +40,30 @@ func requireTenant(c *gin.Context) (*uint, string, bool) {
 	}
 	return schoolID, role, true
 }
+
+func resolveWriteSchoolID(c *gin.Context, bodySchoolID *uint) (*uint, string, bool) {
+	schoolID, role, ok := requireTenant(c)
+	if !ok {
+		return nil, role, false
+	}
+
+	if role == "super_admin" {
+		if bodySchoolID == nil || *bodySchoolID == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "school_id is required for super_admin write operations"})
+			return nil, role, false
+		}
+		return bodySchoolID, role, true
+	}
+
+	if bodySchoolID != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "school_id in payload is not allowed for non-super_admin"})
+		return nil, role, false
+	}
+
+	if schoolID == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing school context"})
+		return nil, role, false
+	}
+
+	return schoolID, role, true
+}

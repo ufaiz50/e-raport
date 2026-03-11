@@ -63,14 +63,14 @@ func (r *attendanceRepository) FindAttendances(c *gin.Context) {
 }
 
 func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
-	if !ok {
-		return
-	}
-
 	var input models.UpsertAttendance
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
 		return
 	}
 

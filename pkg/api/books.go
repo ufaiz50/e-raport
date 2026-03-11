@@ -219,11 +219,6 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 // @Failure 401 {string} string "Unauthorized"
 // @Router /books [post]
 func (r *bookRepository) CreateBook(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
-	if !ok {
-		return
-	}
-
 	appCtx, exists := c.MustGet("appCtx").(*bookRepository)
 	if !exists {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
@@ -233,6 +228,11 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
 		return
 	}
 
@@ -307,21 +307,21 @@ func (r *bookRepository) FindBook(c *gin.Context) {
 // @Failure 404 {string} string "book not found"
 // @Router /books/{id} [put]
 func (r *bookRepository) UpdateBook(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
+	var input models.UpdateBook
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
 	if !ok {
 		return
 	}
 
 	var book models.Book
-	var input models.UpdateBook
-
 	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "book not found"})
-		return
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

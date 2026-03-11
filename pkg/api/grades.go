@@ -106,14 +106,14 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 // @Failure 400 {string} string "Bad Request"
 // @Router /grades [post]
 func (r *gradeRepository) CreateGrade(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
-	if !ok {
-		return
-	}
-
 	var input models.CreateGrade
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
 		return
 	}
 
@@ -160,7 +160,13 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 // @Success 200 {object} models.Grade "Successfully updated grade"
 // @Router /grades/{id} [put]
 func (r *gradeRepository) UpdateGrade(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
+	var input models.UpdateGrade
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
 	if !ok {
 		return
 	}
@@ -168,12 +174,6 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	var grade models.Grade
 	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&grade).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "grade not found"})
-		return
-	}
-
-	var input models.UpdateGrade
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

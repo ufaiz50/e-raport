@@ -68,14 +68,14 @@ func (r *classRepository) FindClasses(c *gin.Context) {
 }
 
 func (r *classRepository) CreateClass(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
-	if !ok {
-		return
-	}
-
 	var input models.CreateClass
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
 		return
 	}
 	class := models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: schoolID}
@@ -87,7 +87,13 @@ func (r *classRepository) CreateClass(c *gin.Context) {
 }
 
 func (r *classRepository) UpdateClass(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
+	var input models.UpdateClass
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
 	if !ok {
 		return
 	}
@@ -95,11 +101,6 @@ func (r *classRepository) UpdateClass(c *gin.Context) {
 	var class models.Class
 	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&class).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class not found"})
-		return
-	}
-	var input models.UpdateClass
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if err := r.DB.Model(&class).Updates(models.Class{Name: input.Name, Level: input.Level, Homeroom: input.Homeroom, AcademicYear: input.AcademicYear, SchoolID: schoolID}).Error; err != nil {

@@ -89,14 +89,14 @@ func (r *studentRepository) FindStudents(c *gin.Context) {
 // @Failure 401 {string} string "Unauthorized"
 // @Router /students [post]
 func (r *studentRepository) CreateStudent(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
-	if !ok {
-		return
-	}
-
 	var input models.CreateStudent
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
 		return
 	}
 
@@ -151,21 +151,21 @@ func (r *studentRepository) FindStudent(c *gin.Context) {
 // @Failure 404 {string} string "Student not found"
 // @Router /students/{id} [put]
 func (r *studentRepository) UpdateStudent(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
+	var input models.UpdateStudent
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
 	if !ok {
 		return
 	}
 
 	var student models.Student
-	var input models.UpdateStudent
-
 	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
-		return
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
