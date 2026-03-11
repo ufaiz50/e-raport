@@ -530,6 +530,9 @@ definitions:
     properties:
       title: { type: string }
       author: { type: string }
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       student_id: { type: integer }
 
   models.UpdateBook:
@@ -537,6 +540,9 @@ definitions:
     properties:
       title: { type: string }
       author: { type: string }
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       student_id: { type: integer }
 
   models.Student:
@@ -555,6 +561,9 @@ definitions:
       name: { type: string }
       email: { type: string }
       type: { type: string, enum: [junior, senior] }
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       class_id: { type: integer }
 
   models.UpdateStudent:
@@ -563,6 +572,9 @@ definitions:
       name: { type: string }
       email: { type: string }
       type: { type: string, enum: [junior, senior] }
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       class_id: { type: integer }
 
   models.CreateClass:
@@ -573,6 +585,9 @@ definitions:
       level: { type: string }
       homeroom: { type: string }
       academic_year: { type: string }
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
 
   models.UpdateClass:
     type: object
@@ -581,11 +596,17 @@ definitions:
       level: { type: string }
       homeroom: { type: string }
       academic_year: { type: string }
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
 
   models.CreateGrade:
     type: object
     required: [student_id, book_id, semester, academic_year, knowledge_score, skill_score]
     properties:
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       student_id: { type: integer }
       book_id: { type: integer }
       semester: { type: integer }
@@ -597,6 +618,9 @@ definitions:
   models.UpdateGrade:
     type: object
     properties:
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       knowledge_score: { type: number }
       skill_score: { type: number }
       notes: { type: string }
@@ -605,6 +629,9 @@ definitions:
     type: object
     required: [student_id, semester, academic_year]
     properties:
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       student_id: { type: integer }
       semester: { type: integer }
       academic_year: { type: string }
@@ -616,6 +643,9 @@ definitions:
     type: object
     required: [student_id, semester, academic_year, homeroom_comment]
     properties:
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       student_id: { type: integer }
       semester: { type: integer }
       academic_year: { type: string }
