@@ -32,7 +32,24 @@ paths:
           required: true
           schema: { $ref: '#/definitions/models.LoginUser' }
       responses:
-        '200': { description: JWT token }
+        '200':
+          description: Access and refresh token
+          schema: { $ref: '#/definitions/models.AuthTokens' }
+
+  /refresh:
+    post:
+      tags: [user]
+      security: [{ ApiKeyAuth: [] }]
+      summary: Refresh access token
+      parameters:
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.RefreshTokenRequest' }
+      responses:
+        '200':
+          description: Refreshed access and refresh token
+          schema: { $ref: '#/definitions/models.AuthTokens' }
 
   /register:
     post:
@@ -540,6 +557,19 @@ definitions:
       role:
         type: string
         enum: [admin, guru, wali_kelas]
+
+  models.AuthTokens:
+    type: object
+    properties:
+      token: { type: string }
+      access_token: { type: string }
+      refresh_token: { type: string }
+
+  models.RefreshTokenRequest:
+    type: object
+    required: [refresh_token]
+    properties:
+      refresh_token: { type: string }
 
   models.Book:
     type: object

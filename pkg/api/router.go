@@ -97,6 +97,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.PUT("/school-profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Upsert)
 
 		v1.POST("/login", middleware.APIKeyAuth(), userRepository.LoginHandler)
+		v1.POST("/refresh", middleware.APIKeyAuth(), userRepository.RefreshTokenHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
 	}
 	r.GET("/docs", ScalarDocs)

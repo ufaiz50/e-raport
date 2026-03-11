@@ -18,6 +18,7 @@ import (
 
 type UserRepository interface {
 	LoginHandler(c *gin.Context)
+	RefreshTokenHandler(c *gin.Context)
 	RegisterHandler(c *gin.Context)
 }
 
@@ -76,14 +77,53 @@ func (r *userRepository) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	// Generate JWT token
-	token, err := auth.GenerateToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
+	accessToken, err := auth.GenerateAccessToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	refreshToken, err := auth.GenerateRefreshToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating refresh token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": accessToken, "access_token": accessToken, "refresh_token": refreshToken})
+}
+
+func (r *userRepository) RefreshTokenHandler(c *gin.Context) {
+	var req models.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	claims, err := auth.ParseRefreshToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	var dbUser models.User
+	if err := r.DB.Where("username = ?", claims.Username).First(&dbUser).Error(); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	accessToken, err := auth.GenerateAccessToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
+		return
+	}
+
+	refreshToken, err := auth.GenerateRefreshToken(dbUser.Username, dbUser.Role, dbUser.SchoolID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating refresh token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": accessToken, "access_token": accessToken, "refresh_token": refreshToken})
 }
 
 // RegisterHandler godoc
