@@ -403,7 +403,13 @@ paths:
       tags: [schools]
       security: [{ ApiKeyAuth: [] }]
       summary: Get school profile
-      responses: { '200': { description: OK } }
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/definitions/models.UpsertSchoolProfile' }
     put:
       tags: [schools]
       security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
@@ -413,14 +419,26 @@ paths:
           name: input
           required: true
           schema: { $ref: '#/definitions/models.UpsertSchoolProfile' }
-      responses: { '200': { description: OK } }
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/definitions/models.School' }
 
   /dashboard/summary:
     get:
       tags: [dashboard]
       security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
       summary: Get executive dashboard summary
-      responses: { '200': { description: OK } }
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/definitions/models.DashboardSummary' }
 
   /reports/students/{student_id}/print:
     get:
@@ -662,6 +680,9 @@ definitions:
     type: object
     required: [school_name]
     properties:
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
       school_name: { type: string }
       npsn: { type: string }
       address: { type: string }
@@ -670,6 +691,49 @@ definitions:
       headmaster_sign: { type: string }
       school_stamp: { type: string }
 
+  models.DashboardTotals:
+    type: object
+    properties:
+      students: { type: integer }
+      classes: { type: integer }
+      grades: { type: integer }
+      attendances: { type: integer }
+      report_notes: { type: integer }
+
+  models.SemesterTrendItem:
+    type: object
+    properties:
+      academic_year: { type: string }
+      semester: { type: integer }
+      avg_final: { type: number }
+      count: { type: integer }
+
+  models.ClassCompletenessItem:
+    type: object
+    properties:
+      class_id: { type: integer }
+      class_name: { type: string }
+      level: { type: string }
+      total_students: { type: integer }
+      grade_pct: { type: integer }
+      attendance_pct: { type: integer }
+      report_note_pct: { type: integer }
+      completeness_pct: { type: integer }
+
+  models.DashboardSummary:
+    type: object
+    properties:
+      totals: { $ref: '#/definitions/models.DashboardTotals' }
+      semester_trends:
+        type: array
+        items: { $ref: '#/definitions/models.SemesterTrendItem' }
+      class_completeness:
+        type: array
+        items: { $ref: '#/definitions/models.ClassCompletenessItem' }
+      recommendations:
+        type: array
+        items: { type: string }
+
   models.School:
     type: object
     properties:
@@ -677,6 +741,11 @@ definitions:
       name: { type: string }
       code: { type: string }
       address: { type: string }
+      npsn: { type: string }
+      principal_name: { type: string }
+      principal_nip: { type: string }
+      headmaster_sign: { type: string }
+      school_stamp: { type: string }
 
   models.CreateSchool:
     type: object
@@ -685,6 +754,11 @@ definitions:
       name: { type: string }
       code: { type: string }
       address: { type: string }
+      npsn: { type: string }
+      principal_name: { type: string }
+      principal_nip: { type: string }
+      headmaster_sign: { type: string }
+      school_stamp: { type: string }
 
   models.UpdateSchool:
     type: object
@@ -692,6 +766,11 @@ definitions:
       name: { type: string }
       code: { type: string }
       address: { type: string }
+      npsn: { type: string }
+      principal_name: { type: string }
+      principal_nip: { type: string }
+      headmaster_sign: { type: string }
+      school_stamp: { type: string }
 
 securityDefinitions:
   ApiKeyAuth:
