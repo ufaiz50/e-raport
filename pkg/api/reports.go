@@ -454,10 +454,10 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 		}
 	}
 
-	school := models.SchoolProfile{SchoolName: "E-Raport Internal School"}
+	school := models.School{Name: "E-Raport Internal School"}
 	schoolQuery := r.DB.Order("id asc")
 	if role != "super_admin" {
-		schoolQuery = schoolQuery.Where("school_id = ?", *schoolID)
+		schoolQuery = schoolQuery.Where("id = ?", *schoolID)
 	}
 	_ = schoolQuery.First(&school).Error
 
@@ -478,7 +478,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	verificationID := fmt.Sprintf("ERAPORT-%d-%d-%s", studentID, semester, academicYear)
 
 	return reportView{
-		SchoolName:     school.SchoolName,
+		SchoolName:     school.Name,
 		SchoolAddress:  school.Address,
 		SchoolNPSN:     school.NPSN,
 		PrincipalName:  school.PrincipalName,

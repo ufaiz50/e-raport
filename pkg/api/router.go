@@ -27,6 +27,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 	classRepository := NewClassRepository(db, ctx)
 	gradeRepository := NewGradeRepository(db, ctx)
 	reportRepository := NewReportRepository(db)
+	dashboardRepository := NewDashboardRepository(db)
 	schoolRepository := NewSchoolRepository(db)
 	schoolProfileRepository := NewSchoolProfileRepository(db)
 	attendanceRepository := NewAttendanceRepository(db, ctx)
@@ -80,6 +81,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.GET("/reports/students/:student_id/pdf", middleware.APIKeyAuth(), middleware.JWTAuth(), reportRepository.PrintReportCardPDF)
 		v1.GET("/reports/classes/:class_id/pdf", middleware.APIKeyAuth(), middleware.JWTAuth(), reportRepository.PrintReportCardClassPDF)
 		v1.POST("/reports/students/:student_id/finalize", middleware.APIKeyAuth(), middleware.JWTAuth(), reportRepository.FinalizeReportCard)
+		v1.GET("/dashboard/summary", middleware.APIKeyAuth(), middleware.JWTAuth(), dashboardRepository.Summary)
 
 		v1.GET("/schools", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.ListSchools)
 		v1.POST("/schools", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.CreateSchool)

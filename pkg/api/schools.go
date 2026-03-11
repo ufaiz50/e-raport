@@ -71,7 +71,16 @@ func (r *schoolRepository) CreateSchool(c *gin.Context) {
 		return
 	}
 
-	school := models.School{Name: input.Name, Code: input.Code, Address: input.Address}
+	school := models.School{
+		Name:           input.Name,
+		Code:           input.Code,
+		Address:        input.Address,
+		NPSN:           input.NPSN,
+		PrincipalName:  input.PrincipalName,
+		PrincipalNIP:   input.PrincipalNIP,
+		HeadmasterSign: input.HeadmasterSign,
+		SchoolStamp:    input.SchoolStamp,
+	}
 	if err := r.DB.Create(&school).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create school"})
 		return
@@ -104,7 +113,16 @@ func (r *schoolRepository) UpdateSchool(c *gin.Context) {
 		return
 	}
 
-	if err := r.DB.Model(&school).Updates(models.School{Name: input.Name, Code: input.Code, Address: input.Address}).Error; err != nil {
+	if err := r.DB.Model(&school).Updates(models.School{
+		Name:           input.Name,
+		Code:           input.Code,
+		Address:        input.Address,
+		NPSN:           input.NPSN,
+		PrincipalName:  input.PrincipalName,
+		PrincipalNIP:   input.PrincipalNIP,
+		HeadmasterSign: input.HeadmasterSign,
+		SchoolStamp:    input.SchoolStamp,
+	}).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update school"})
 		return
 	}

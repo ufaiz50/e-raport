@@ -22,53 +22,54 @@ func (r *schoolProfileRepository) Get(c *gin.Context) {
 		return
 	}
 
-	var profile models.SchoolProfile
-	query := r.DB.Order("id asc")
+	var school models.School
 	if role != "super_admin" {
-		query = query.Where("school_id = ?", *schoolID)
-	}
-	if err := query.First(&profile).Error; err != nil {
+		if err := r.DB.Where("id = ?", *schoolID).First(&school).Error(); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "school profile not found"})
+			return
+		}
+	} else if schoolID != nil {
+		if err := r.DB.Where("id = ?", *schoolID).First(&school).Error(); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "school profile not found"})
+			return
+		}
+	} else if err := r.DB.Order("id asc").First(&school).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "school profile not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": profile})
+
+	c.JSON(http.StatusOK, gin.H{"data": models.UpsertSchoolProfile{
+		SchoolID:       &school.ID,
+		SchoolName:     school.Name,
+		NPSN:           school.NPSN,
+		Address:        school.Address,
+		PrincipalName:  school.PrincipalName,
+		PrincipalNIP:   school.PrincipalNIP,
+		HeadmasterSign: school.HeadmasterSign,
+		SchoolStamp:    school.SchoolStamp,
+	}})
 }
 
 func (r *schoolProfileRepository) Upsert(c *gin.Context) {
-	schoolID, _, ok := requireTenant(c)
-	if !ok {
-		return
-	}
-
 	var input models.UpsertSchoolProfile
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var profile models.SchoolProfile
-	if err := r.DB.Where("school_id = ?", *schoolID).Order("id asc").First(&profile).Error; err != nil {
-		profile = models.SchoolProfile{
-			SchoolID:       schoolID,
-			SchoolName:     input.SchoolName,
-			NPSN:           input.NPSN,
-			Address:        input.Address,
-			PrincipalName:  input.PrincipalName,
-			PrincipalNIP:   input.PrincipalNIP,
-			HeadmasterSign: input.HeadmasterSign,
-			SchoolStamp:    input.SchoolStamp,
-		}
-		if err := r.DB.Create(&profile).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create profile"})
-			return
-		}
-		c.JSON(http.StatusCreated, gin.H{"data": profile})
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
 		return
 	}
 
-	if err := r.DB.Model(&profile).Updates(models.SchoolProfile{
-		SchoolID:       schoolID,
-		SchoolName:     input.SchoolName,
+	var school models.School
+	if err := r.DB.Where("id = ?", *schoolID).First(&school).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "school not found"})
+		return
+	}
+
+	if err := r.DB.Model(&school).Updates(models.School{
+		Name:           input.SchoolName,
 		NPSN:           input.NPSN,
 		Address:        input.Address,
 		PrincipalName:  input.PrincipalName,
@@ -80,5 +81,5 @@ func (r *schoolProfileRepository) Upsert(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": profile})
+	c.JSON(http.StatusOK, gin.H{"data": school})
 }
