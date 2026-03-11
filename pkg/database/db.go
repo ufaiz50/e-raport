@@ -80,5 +80,29 @@ func NewDatabase() *gorm.DB {
 	database.AutoMigrate(&models.ReportNote{})
 	database.AutoMigrate(&models.User{})
 
+	// Backfill schools columns from legacy school_profiles table when available.
+	// Safe no-op if school_profiles table does not exist.
+	database.Exec(`
+		DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1 FROM information_schema.tables
+				WHERE table_schema = 'public' AND table_name = 'school_profiles'
+			) THEN
+				UPDATE schools s
+				SET
+					name = COALESCE(NULLIF(sp.school_name, ''), s.name),
+					address = COALESCE(NULLIF(sp.address, ''), s.address),
+					npsn = COALESCE(NULLIF(sp.npsn, ''), s.npsn),
+					principal_name = COALESCE(NULLIF(sp.principal_name, ''), s.principal_name),
+					principal_nip = COALESCE(NULLIF(sp.principal_nip, ''), s.principal_nip),
+					headmaster_sign = COALESCE(NULLIF(sp.headmaster_sign, ''), s.headmaster_sign),
+					school_stamp = COALESCE(NULLIF(sp.school_stamp, ''), s.school_stamp)
+				FROM school_profiles sp
+				WHERE sp.school_id = s.id;
+			END IF;
+		END $$;
+	`)
+
 	return database
 }
