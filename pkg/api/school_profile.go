@@ -17,6 +17,12 @@ func NewSchoolProfileRepository(db database.Database) *schoolProfileRepository {
 }
 
 func (r *schoolProfileRepository) Get(c *gin.Context) {
+	if c.FullPath() == "/api/v1/school-profile" {
+		c.Header("Deprecation", "true")
+		c.Header("Sunset", "2026-12-31")
+		c.Header("Link", "</api/v1/schools/profile>; rel=\"successor-version\"")
+	}
+
 	schoolID, role, ok := requireTenant(c)
 	if !ok {
 		return
@@ -51,6 +57,12 @@ func (r *schoolProfileRepository) Get(c *gin.Context) {
 }
 
 func (r *schoolProfileRepository) Upsert(c *gin.Context) {
+	if c.FullPath() == "/api/v1/school-profile" {
+		c.Header("Deprecation", "true")
+		c.Header("Sunset", "2026-12-31")
+		c.Header("Link", "</api/v1/schools/profile>; rel=\"successor-version\"")
+	}
+
 	var input models.UpsertSchoolProfile
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

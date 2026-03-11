@@ -398,14 +398,14 @@ paths:
           type: string
       responses: { '204': { description: No Content } }
 
-  /school-profile:
+  /schools/profile:
     get:
-      tags: [school-profile]
+      tags: [schools]
       security: [{ ApiKeyAuth: [] }]
       summary: Get school profile
       responses: { '200': { description: OK } }
     put:
-      tags: [school-profile]
+      tags: [schools]
       security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
       summary: Upsert school profile
       parameters:
@@ -413,6 +413,13 @@ paths:
           name: input
           required: true
           schema: { $ref: '#/definitions/models.UpsertSchoolProfile' }
+      responses: { '200': { description: OK } }
+
+  /dashboard/summary:
+    get:
+      tags: [dashboard]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Get executive dashboard summary
       responses: { '200': { description: OK } }
 
   /reports/students/{student_id}/print:

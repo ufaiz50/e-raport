@@ -88,6 +88,11 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.PUT("/schools/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.UpdateSchool)
 		v1.DELETE("/schools/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.DeleteSchool)
 
+		// Preferred school profile endpoints (backed by schools table)
+		v1.GET("/schools/profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Get)
+		v1.PUT("/schools/profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Upsert)
+
+		// Backward-compat legacy endpoints (deprecated)
 		v1.GET("/school-profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Get)
 		v1.PUT("/school-profile", middleware.APIKeyAuth(), middleware.JWTAuth(), schoolProfileRepository.Upsert)
 
