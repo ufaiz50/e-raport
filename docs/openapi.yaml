@@ -337,6 +337,16 @@ paths:
           name: academic_year
           type: string
       responses: { '200': { description: OK } }
+    put:
+      tags: [report-notes]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Upsert report note
+      parameters:
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.UpsertReportNote' }
+      responses: { '200': { description: OK } }
 
   /enrollments:
     get:
@@ -384,16 +394,6 @@ paths:
           name: id
           required: true
           type: integer
-      responses: { '200': { description: OK } }
-    put:
-      tags: [report-notes]
-      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
-      summary: Upsert report note
-      parameters:
-        - in: body
-          name: input
-          required: true
-          schema: { $ref: '#/definitions/models.UpsertReportNote' }
       responses: { '200': { description: OK } }
 
   /schools:
