@@ -482,7 +482,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 		SchoolAddress:  school.Address,
 		SchoolNPSN:     school.NPSN,
 		PrincipalName:  school.PrincipalName,
-		StudentName:    student.Name,
+		StudentName:    student.FirstName + " " + student.LastName,
 		StudentEmail:   student.Email,
 		StudentType:    student.Type,
 		ClassName:      className,

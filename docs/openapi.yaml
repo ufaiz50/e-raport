@@ -654,18 +654,40 @@ definitions:
     type: object
     properties:
       id: { type: integer }
-      name: { type: string }
+      first_name: { type: string }
+      last_name: { type: string }
       email: { type: string }
-      type: { type: string, enum: [junior, senior] }
+      nis: { type: string }
+      nisn: { type: string }
+      gender: { type: string }
+      birth_place: { type: string }
+      birth_date: { type: string, format: date-time }
+      address: { type: string }
+      phone: { type: string }
+      religion: { type: string }
+      parent_name: { type: string }
+      parent_phone: { type: string }
+      status: { type: string }
       class_id: { type: integer }
 
   models.CreateStudent:
     type: object
-    required: [name, email, type]
+    required: [first_name, last_name, email, class_id]
     properties:
-      name: { type: string }
+      first_name: { type: string }
+      last_name: { type: string }
       email: { type: string }
-      type: { type: string, enum: [junior, senior] }
+      nis: { type: string }
+      nisn: { type: string }
+      gender: { type: string }
+      birth_place: { type: string }
+      birth_date: { type: string, format: date-time }
+      address: { type: string }
+      phone: { type: string }
+      religion: { type: string }
+      parent_name: { type: string }
+      parent_phone: { type: string }
+      status: { type: string }
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
@@ -674,9 +696,20 @@ definitions:
   models.UpdateStudent:
     type: object
     properties:
-      name: { type: string }
+      first_name: { type: string }
+      last_name: { type: string }
       email: { type: string }
-      type: { type: string, enum: [junior, senior] }
+      nis: { type: string }
+      nisn: { type: string }
+      gender: { type: string }
+      birth_place: { type: string }
+      birth_date: { type: string, format: date-time }
+      address: { type: string }
+      phone: { type: string }
+      religion: { type: string }
+      parent_name: { type: string }
+      parent_phone: { type: string }
+      status: { type: string }
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.

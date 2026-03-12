@@ -141,15 +141,36 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 		return
 	}
 
-	student := models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: schoolID}
-	if input.ClassID != nil {
-		var class models.Class
-		if err := r.DB.Where("id = ? AND school_id = ?", *input.ClassID, *schoolID).First(&class).Error(); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
-			return
-		}
-		student.ClassID = input.ClassID
+	if input.ClassID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "class_id is required"})
+		return
 	}
+
+	student := models.Student{
+		FirstName:   input.FirstName,
+		LastName:    input.LastName,
+		Email:       input.Email,
+		NIS:         input.NIS,
+		NISN:        input.NISN,
+		Gender:      input.Gender,
+		BirthPlace:  input.BirthPlace,
+		BirthDate:   input.BirthDate,
+		Address:     input.Address,
+		Phone:       input.Phone,
+		Religion:    input.Religion,
+		ParentName:  input.ParentName,
+		ParentPhone: input.ParentPhone,
+		Status:      input.Status,
+		SchoolID:    schoolID,
+		Type:        "junior",
+	}
+
+	var class models.Class
+	if err := r.DB.Where("id = ? AND school_id = ?", *input.ClassID, *schoolID).First(&class).Error(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
+		return
+	}
+	student.ClassID = input.ClassID
 	r.DB.Create(&student)
 	if input.ClassID != nil {
 		if err := r.syncActiveEnrollment(&student, input.ClassID, schoolID); err != nil {
@@ -216,20 +237,38 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 		return
 	}
 
-	if input.ClassID != nil {
-		var class models.Class
-		if err := r.DB.Where("id = ? AND school_id = ?", *input.ClassID, *schoolID).First(&class).Error(); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
-			return
-		}
+	if input.ClassID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "class_id is required"})
+		return
 	}
 
-	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: schoolID, ClassID: input.ClassID})
-	if input.ClassID != nil {
-		if err := r.syncActiveEnrollment(&student, input.ClassID, schoolID); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update enrollment"})
-			return
-		}
+	var class models.Class
+	if err := r.DB.Where("id = ? AND school_id = ?", *input.ClassID, *schoolID).First(&class).Error(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
+		return
+	}
+
+	r.DB.Model(&student).Updates(models.Student{
+		FirstName:   input.FirstName,
+		LastName:    input.LastName,
+		Email:       input.Email,
+		NIS:         input.NIS,
+		NISN:        input.NISN,
+		Gender:      input.Gender,
+		BirthPlace:  input.BirthPlace,
+		BirthDate:   input.BirthDate,
+		Address:     input.Address,
+		Phone:       input.Phone,
+		Religion:    input.Religion,
+		ParentName:  input.ParentName,
+		ParentPhone: input.ParentPhone,
+		Status:      input.Status,
+		SchoolID:    schoolID,
+		ClassID:     input.ClassID,
+	})
+	if err := r.syncActiveEnrollment(&student, input.ClassID, schoolID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update enrollment"})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
