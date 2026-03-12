@@ -97,6 +97,80 @@ paths:
       responses:
         '201': { description: Created }
 
+  /subjects:
+    get:
+      tags: [subjects]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List subjects (alias to books)
+      parameters:
+        - in: query
+          name: offset
+          type: integer
+        - in: query
+          name: limit
+          type: integer
+      responses: { '200': { description: OK } }
+    post:
+      tags: [subjects]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create subject (alias to books)
+      parameters:
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.CreateBook' }
+      responses: { '201': { description: Created } }
+
+  /subjects/{id}:
+    get:
+      tags: [subjects]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Get subject by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
+      responses: { '200': { description: OK } }
+    put:
+      tags: [subjects]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Update subject by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.UpdateBook' }
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [subjects]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Delete subject by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
+      responses: { '204': { description: No Content } }
+
+  /teachers:
+    get:
+      tags: [teachers]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List teachers (users with role=guru)
+      parameters:
+        - in: query
+          name: offset
+          type: integer
+        - in: query
+          name: limit
+          type: integer
+      responses: { '200': { description: OK } }
+
   /books/{id}:
     get:
       tags: [books]

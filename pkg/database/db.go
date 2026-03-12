@@ -71,9 +71,15 @@ func NewDatabase() *gorm.DB {
 		}
 	}
 	database.AutoMigrate(&models.School{})
+	database.AutoMigrate(&models.AcademicYear{})
+	database.AutoMigrate(&models.Semester{})
+	database.AutoMigrate(&models.Curriculum{})
+	database.AutoMigrate(&models.Subject{})
+	database.AutoMigrate(&models.CurriculumSubject{})
 	database.AutoMigrate(&models.Student{})
 	database.AutoMigrate(&models.Class{})
 	database.AutoMigrate(&models.StudentEnrollment{})
+	database.AutoMigrate(&models.Teaching{})
 	database.AutoMigrate(&models.Book{})
 	database.AutoMigrate(&models.Grade{})
 	database.AutoMigrate(&models.ReportCard{})

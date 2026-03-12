@@ -56,6 +56,13 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.PUT("/books/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.UpdateBook)
 		v1.DELETE("/books/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.DeleteBook)
 
+		// Phase-2 alias endpoints (domain-friendly naming)
+		v1.GET("/subjects", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.FindSubjects)
+		v1.POST("/subjects", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.CreateSubject)
+		v1.GET("/subjects/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.FindSubject)
+		v1.PUT("/subjects/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.UpdateSubject)
+		v1.DELETE("/subjects/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), bookRepository.DeleteSubject)
+
 		v1.GET("/students", middleware.APIKeyAuth(), middleware.JWTAuth(), studentRepository.FindStudents)
 		v1.POST("/students", middleware.APIKeyAuth(), middleware.JWTAuth(), studentRepository.CreateStudent)
 		v1.GET("/students/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), studentRepository.FindStudent)
@@ -105,6 +112,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.POST("/refresh", middleware.APIKeyAuth(), userRepository.RefreshTokenHandler)
 		v1.POST("/logout", middleware.APIKeyAuth(), userRepository.LogoutHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
+		v1.GET("/teachers", middleware.APIKeyAuth(), middleware.JWTAuth(), userRepository.ListTeachers)
 	}
 	r.GET("/docs", ScalarDocs)
 	r.GET("/openapi.yaml", OpenAPIDoc)
