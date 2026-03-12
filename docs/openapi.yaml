@@ -337,6 +337,54 @@ paths:
           name: academic_year
           type: string
       responses: { '200': { description: OK } }
+
+  /enrollments:
+    get:
+      tags: [enrollments]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List student enrollments
+      parameters:
+        - in: query
+          name: offset
+          type: integer
+        - in: query
+          name: limit
+          type: integer
+        - in: query
+          name: student_id
+          type: integer
+        - in: query
+          name: academic_year
+          type: string
+        - in: query
+          name: semester
+          type: integer
+        - in: query
+          name: is_active
+          type: boolean
+      responses: { '200': { description: OK } }
+    post:
+      tags: [enrollments]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create student enrollment
+      parameters:
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.CreateEnrollment' }
+      responses: { '201': { description: Created } }
+
+  /enrollments/{id}/close:
+    put:
+      tags: [enrollments]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Close active enrollment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: integer
+      responses: { '200': { description: OK } }
     put:
       tags: [report-notes]
       security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
@@ -633,6 +681,32 @@ definitions:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
       class_id: { type: integer }
+
+  models.StudentEnrollment:
+    type: object
+    properties:
+      id: { type: integer }
+      school_id: { type: integer }
+      student_id: { type: integer }
+      class_id: { type: integer }
+      academic_year: { type: string }
+      semester: { type: integer }
+      is_active: { type: boolean }
+      start_date: { type: string, format: date-time }
+      end_date: { type: string, format: date-time }
+
+  models.CreateEnrollment:
+    type: object
+    required: [student_id, class_id, academic_year, semester]
+    properties:
+      school_id:
+        type: integer
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      student_id: { type: integer }
+      class_id: { type: integer }
+      academic_year: { type: string }
+      semester: { type: integer }
+      start_date: { type: string, format: date-time }
 
   models.CreateClass:
     type: object

@@ -73,6 +73,7 @@ func NewDatabase() *gorm.DB {
 	database.AutoMigrate(&models.School{})
 	database.AutoMigrate(&models.Student{})
 	database.AutoMigrate(&models.Class{})
+	database.AutoMigrate(&models.StudentEnrollment{})
 	database.AutoMigrate(&models.Book{})
 	database.AutoMigrate(&models.Grade{})
 	database.AutoMigrate(&models.ReportCard{})
@@ -102,6 +103,20 @@ func NewDatabase() *gorm.DB {
 				WHERE sp.school_id = s.id;
 			END IF;
 		END $$;
+	`)
+
+	// Backfill initial active enrollment from legacy students.class_id when missing.
+	database.Exec(`
+		INSERT INTO student_enrollments (school_id, student_id, class_id, academic_year, semester, is_active, start_date, created_at, updated_at)
+		SELECT s.school_id, s.id, s.class_id, COALESCE(c.academic_year, to_char(current_date, 'YYYY') || '/' || to_char(current_date + interval '1 year', 'YYYY')),
+			1, true, NOW(), NOW(), NOW()
+		FROM students s
+		JOIN classes c ON c.id = s.class_id
+		WHERE s.class_id IS NOT NULL
+		AND NOT EXISTS (
+			SELECT 1 FROM student_enrollments se
+			WHERE se.student_id = s.id AND se.is_active = true
+		);
 	`)
 
 	return database

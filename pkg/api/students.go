@@ -5,6 +5,7 @@ import (
 	"golang-rest-api-template/pkg/database"
 	"golang-rest-api-template/pkg/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +21,37 @@ type StudentRepository interface {
 type studentRepository struct {
 	DB  database.Database
 	Ctx *context.Context
+}
+
+func (r *studentRepository) syncActiveEnrollment(student *models.Student, classID *uint, schoolID *uint) error {
+	if classID == nil {
+		return nil
+	}
+
+	var class models.Class
+	if err := r.DB.Where("id = ? AND school_id = ?", *classID, *schoolID).First(&class).Error(); err != nil {
+		return err
+	}
+
+	var active models.StudentEnrollment
+	if err := r.DB.Where("student_id = ? AND school_id = ? AND is_active = ?", student.ID, *schoolID, true).Order("id desc").First(&active).Error; err == nil {
+		if active.ClassID == *classID && active.AcademicYear == class.AcademicYear {
+			return nil
+		}
+		now := time.Now()
+		r.DB.Model(&active).Updates(map[string]interface{}{"is_active": false, "end_date": now})
+	}
+
+	enrollment := models.StudentEnrollment{
+		SchoolID:     schoolID,
+		StudentID:    student.ID,
+		ClassID:      *classID,
+		AcademicYear: class.AcademicYear,
+		Semester:     1,
+		IsActive:     true,
+		StartDate:    time.Now(),
+	}
+	return r.DB.Create(&enrollment).Error
 }
 
 func NewStudentRepository(db database.Database, ctx *context.Context) *studentRepository {
@@ -64,6 +96,15 @@ func (r *studentRepository) FindStudents(c *gin.Context) {
 		dataQuery = dataQuery.Where("school_id = ?", *schoolID)
 	}
 	dataQuery.Find(&students)
+	for i := range students {
+		if students[i].SchoolID == nil {
+			continue
+		}
+		var active models.StudentEnrollment
+		if err := r.DB.Where("student_id = ? AND school_id = ? AND is_active = ?", students[i].ID, *students[i].SchoolID, true).Order("id desc").First(&active).Error; err == nil {
+			students[i].ClassID = &active.ClassID
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"data": students,
 		"meta": gin.H{
@@ -110,6 +151,12 @@ func (r *studentRepository) CreateStudent(c *gin.Context) {
 		student.ClassID = input.ClassID
 	}
 	r.DB.Create(&student)
+	if input.ClassID != nil {
+		if err := r.syncActiveEnrollment(&student, input.ClassID, schoolID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create enrollment"})
+			return
+		}
+	}
 	c.JSON(http.StatusCreated, gin.H{"data": student})
 }
 
@@ -178,6 +225,12 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 	}
 
 	r.DB.Model(&student).Updates(models.Student{Name: input.Name, Email: input.Email, Type: input.Type, SchoolID: schoolID, ClassID: input.ClassID})
+	if input.ClassID != nil {
+		if err := r.syncActiveEnrollment(&student, input.ClassID, schoolID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to update enrollment"})
+			return
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{"data": student})
 }
 
