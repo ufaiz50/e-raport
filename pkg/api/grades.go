@@ -131,6 +131,7 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 
 	grade := models.Grade{
 		SchoolID:       schoolID,
+		EnrollmentID:   input.EnrollmentID,
 		StudentID:      input.StudentID,
 		BookID:         input.BookID,
 		Semester:       input.Semester,
@@ -140,6 +141,13 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 		FinalScore:     computeFinalScore(input.KnowledgeScore, input.SkillScore),
 		Notes:          input.Notes,
 	}
+
+	enrollment, err := resolveEnrollmentForTerm(r.DB, schoolID, input.EnrollmentID, input.StudentID, input.AcademicYear, input.Semester)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	grade.EnrollmentID = &enrollment.ID
 
 	if err := r.DB.Create(&grade).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create grade"})
@@ -186,7 +194,16 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	if input.Notes != nil {
 		grade.Notes = *input.Notes
 	}
+	if input.EnrollmentID != nil {
+		grade.EnrollmentID = input.EnrollmentID
+	}
 	grade.SchoolID = schoolID
+	enrollment, err := resolveEnrollmentForTerm(r.DB, schoolID, grade.EnrollmentID, grade.StudentID, grade.AcademicYear, grade.Semester)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	grade.EnrollmentID = &enrollment.ID
 	grade.FinalScore = computeFinalScore(grade.KnowledgeScore, grade.SkillScore)
 
 	if err := r.DB.Model(&grade).Updates(grade).Error; err != nil {

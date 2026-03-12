@@ -738,6 +738,7 @@ definitions:
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      enrollment_id: { type: integer }
       student_id: { type: integer }
       book_id: { type: integer }
       semester: { type: integer }
@@ -752,6 +753,7 @@ definitions:
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      enrollment_id: { type: integer }
       knowledge_score: { type: number }
       skill_score: { type: number }
       notes: { type: string }
@@ -763,6 +765,7 @@ definitions:
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      enrollment_id: { type: integer }
       student_id: { type: integer }
       semester: { type: integer }
       academic_year: { type: string }
@@ -777,6 +780,7 @@ definitions:
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      enrollment_id: { type: integer }
       student_id: { type: integer }
       semester: { type: integer }
       academic_year: { type: string }

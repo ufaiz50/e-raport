@@ -81,9 +81,15 @@ func (r *reportNoteRepository) UpsertReportNote(c *gin.Context) {
 	}
 
 	var note models.ReportNote
+	enrollment, err := resolveEnrollmentForTerm(r.DB, schoolID, input.EnrollmentID, input.StudentID, input.AcademicYear, input.Semester)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	if err := r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, input.StudentID, input.Semester, input.AcademicYear).First(&note).Error(); err != nil {
 		note = models.ReportNote{
 			SchoolID:        schoolID,
+			EnrollmentID:    &enrollment.ID,
 			StudentID:       input.StudentID,
 			Semester:        input.Semester,
 			AcademicYear:    input.AcademicYear,
@@ -94,6 +100,6 @@ func (r *reportNoteRepository) UpsertReportNote(c *gin.Context) {
 		return
 	}
 
-	r.DB.Model(&note).Updates(models.ReportNote{SchoolID: schoolID, HomeroomComment: input.HomeroomComment})
+	r.DB.Model(&note).Updates(models.ReportNote{SchoolID: schoolID, EnrollmentID: &enrollment.ID, HomeroomComment: input.HomeroomComment})
 	c.JSON(http.StatusOK, gin.H{"data": note})
 }

@@ -81,9 +81,15 @@ func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
 	}
 
 	var attendance models.Attendance
+	enrollment, err := resolveEnrollmentForTerm(r.DB, schoolID, input.EnrollmentID, input.StudentID, input.AcademicYear, input.Semester)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	if err := r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, input.StudentID, input.Semester, input.AcademicYear).First(&attendance).Error(); err != nil {
 		attendance = models.Attendance{
 			SchoolID:       schoolID,
+			EnrollmentID:   &enrollment.ID,
 			StudentID:      input.StudentID,
 			Semester:       input.Semester,
 			AcademicYear:   input.AcademicYear,
@@ -98,6 +104,7 @@ func (r *attendanceRepository) UpsertAttendance(c *gin.Context) {
 
 	r.DB.Model(&attendance).Updates(models.Attendance{
 		SchoolID:       schoolID,
+		EnrollmentID:   &enrollment.ID,
 		SickDays:       input.SickDays,
 		PermissionDays: input.PermissionDays,
 		AbsentDays:     input.AbsentDays,
