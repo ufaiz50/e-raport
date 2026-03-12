@@ -183,6 +183,18 @@ paths:
       summary: Create academic year
       responses: { '201': { description: Created } }
 
+  /academic-years/{id}:
+    put:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Update academic year
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Delete academic year
+      responses: { '204': { description: No Content } }
+
   /semesters:
     get:
       tags: [academics]
@@ -194,6 +206,18 @@ paths:
       security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
       summary: Create semester
       responses: { '201': { description: Created } }
+
+  /semesters/{id}:
+    put:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Update semester
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Delete semester
+      responses: { '204': { description: No Content } }
 
   /curriculums:
     get:
@@ -207,6 +231,18 @@ paths:
       summary: Create curriculum
       responses: { '201': { description: Created } }
 
+  /curriculums/{id}:
+    put:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Update curriculum
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Delete curriculum
+      responses: { '204': { description: No Content } }
+
   /teachings:
     get:
       tags: [academics]
@@ -218,6 +254,18 @@ paths:
       security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
       summary: Create teaching
       responses: { '201': { description: Created } }
+
+  /teachings/{id}:
+    put:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Update teaching
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Delete teaching
+      responses: { '204': { description: No Content } }
 
   /books/{id}:
     get:
