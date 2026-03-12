@@ -28,6 +28,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 	gradeRepository := NewGradeRepository(db, ctx)
 	reportRepository := NewReportRepository(db)
 	dashboardRepository := NewDashboardRepository(db)
+	academicRepository := NewAcademicRepository(db)
 	schoolRepository := NewSchoolRepository(db)
 	schoolProfileRepository := NewSchoolProfileRepository(db)
 	attendanceRepository := NewAttendanceRepository(db, ctx)
@@ -94,6 +95,15 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.GET("/reports/classes/:class_id/pdf", middleware.APIKeyAuth(), middleware.JWTAuth(), reportRepository.PrintReportCardClassPDF)
 		v1.POST("/reports/students/:student_id/finalize", middleware.APIKeyAuth(), middleware.JWTAuth(), reportRepository.FinalizeReportCard)
 		v1.GET("/dashboard/summary", middleware.APIKeyAuth(), middleware.JWTAuth(), dashboardRepository.Summary)
+
+		v1.GET("/academic-years", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.ListAcademicYears)
+		v1.POST("/academic-years", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.CreateAcademicYear)
+		v1.GET("/semesters", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.ListSemesters)
+		v1.POST("/semesters", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.CreateSemester)
+		v1.GET("/curriculums", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.ListCurriculums)
+		v1.POST("/curriculums", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.CreateCurriculum)
+		v1.GET("/teachings", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.ListTeachings)
+		v1.POST("/teachings", middleware.APIKeyAuth(), middleware.JWTAuth(), academicRepository.CreateTeaching)
 
 		v1.GET("/schools", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.ListSchools)
 		v1.POST("/schools", middleware.APIKeyAuth(), middleware.JWTAuth(), middleware.RequireRoles("super_admin"), schoolRepository.CreateSchool)

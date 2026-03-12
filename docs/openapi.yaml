@@ -171,6 +171,54 @@ paths:
           type: integer
       responses: { '200': { description: OK } }
 
+  /academic-years:
+    get:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List academic years
+      responses: { '200': { description: OK } }
+    post:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create academic year
+      responses: { '201': { description: Created } }
+
+  /semesters:
+    get:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List semesters
+      responses: { '200': { description: OK } }
+    post:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create semester
+      responses: { '201': { description: Created } }
+
+  /curriculums:
+    get:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List curriculums
+      responses: { '200': { description: OK } }
+    post:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create curriculum
+      responses: { '201': { description: Created } }
+
+  /teachings:
+    get:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: List teachings
+      responses: { '200': { description: OK } }
+    post:
+      tags: [academics]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Create teaching
+      responses: { '201': { description: Created } }
+
   /books/{id}:
     get:
       tags: [books]
@@ -845,6 +893,8 @@ definitions:
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      semester_id: { type: integer }
+      teaching_id: { type: integer }
       enrollment_id: { type: integer }
       student_id: { type: integer }
       book_id: { type: integer }
@@ -860,6 +910,8 @@ definitions:
       school_id:
         type: integer
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      semester_id: { type: integer }
+      teaching_id: { type: integer }
       enrollment_id: { type: integer }
       knowledge_score: { type: number }
       skill_score: { type: number }

@@ -31,6 +31,21 @@ func computeFinalScore(knowledge, skill float64) float64 {
 	return (knowledge * 0.6) + (skill * 0.4)
 }
 
+func resolveTermBySemesterID(r *gradeRepository, schoolID *uint, semesterID *uint) (*models.Semester, *models.AcademicYear, error) {
+	if semesterID == nil {
+		return nil, nil, nil
+	}
+	var sem models.Semester
+	if err := r.DB.Where("id = ? AND school_id = ?", *semesterID, *schoolID).First(&sem).Error(); err != nil {
+		return nil, nil, err
+	}
+	var ay models.AcademicYear
+	if err := r.DB.Where("id = ? AND school_id = ?", sem.AcademicYearID, *schoolID).First(&ay).Error(); err != nil {
+		return nil, nil, err
+	}
+	return &sem, &ay, nil
+}
+
 // FindGrades godoc
 // @Summary Get grades
 // @Description Get grade list with optional filters: student_id, semester, academic_year
@@ -129,8 +144,20 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 		return
 	}
 
+	sem, ay, err := resolveTermBySemesterID(r, schoolID, input.SemesterID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid semester_id"})
+		return
+	}
+	if sem != nil && ay != nil {
+		input.Semester = sem.OrderNo
+		input.AcademicYear = ay.Year
+	}
+
 	grade := models.Grade{
 		SchoolID:       schoolID,
+		SemesterID:     input.SemesterID,
+		TeachingID:     input.TeachingID,
 		EnrollmentID:   input.EnrollmentID,
 		StudentID:      input.StudentID,
 		BookID:         input.BookID,
@@ -148,6 +175,17 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 		return
 	}
 	grade.EnrollmentID = &enrollment.ID
+	if input.TeachingID != nil {
+		var teaching models.Teaching
+		if err := r.DB.Where("id = ? AND school_id = ?", *input.TeachingID, *schoolID).First(&teaching).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "teaching not found"})
+			return
+		}
+		if teaching.SubjectID != input.BookID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "teaching subject mismatch"})
+			return
+		}
+	}
 
 	if err := r.DB.Create(&grade).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create grade"})
@@ -194,6 +232,21 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	if input.Notes != nil {
 		grade.Notes = *input.Notes
 	}
+	if input.SemesterID != nil {
+		grade.SemesterID = input.SemesterID
+		sem, ay, err := resolveTermBySemesterID(r, schoolID, input.SemesterID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid semester_id"})
+			return
+		}
+		if sem != nil && ay != nil {
+			grade.Semester = sem.OrderNo
+			grade.AcademicYear = ay.Year
+		}
+	}
+	if input.TeachingID != nil {
+		grade.TeachingID = input.TeachingID
+	}
 	if input.EnrollmentID != nil {
 		grade.EnrollmentID = input.EnrollmentID
 	}
@@ -204,6 +257,17 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 		return
 	}
 	grade.EnrollmentID = &enrollment.ID
+	if grade.TeachingID != nil {
+		var teaching models.Teaching
+		if err := r.DB.Where("id = ? AND school_id = ?", *grade.TeachingID, *schoolID).First(&teaching).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "teaching not found"})
+			return
+		}
+		if teaching.SubjectID != grade.BookID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "teaching subject mismatch"})
+			return
+		}
+	}
 	grade.FinalScore = computeFinalScore(grade.KnowledgeScore, grade.SkillScore)
 
 	if err := r.DB.Model(&grade).Updates(grade).Error; err != nil {
