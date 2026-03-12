@@ -107,7 +107,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
 	}
 	r.GET("/docs", ScalarDocs)
-	r.StaticFile("/openapi.yaml", "./docs/openapi.yaml")
+	r.GET("/openapi.yaml", OpenAPIDoc)
 
 	return r
 }

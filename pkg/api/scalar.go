@@ -1,6 +1,12 @@
 package api
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/gin-gonic/gin"
+)
 
 const scalarHTML = `<!doctype html>
 <html>
@@ -18,4 +24,24 @@ const scalarHTML = `<!doctype html>
 func ScalarDocs(c *gin.Context) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(200, scalarHTML)
+}
+
+func OpenAPIDoc(c *gin.Context) {
+	execPath, _ := os.Executable()
+	execDir := filepath.Dir(execPath)
+
+	candidates := []string{
+		"./docs/openapi.yaml",
+		"../docs/openapi.yaml",
+		filepath.Join(execDir, "docs", "openapi.yaml"),
+	}
+
+	for _, p := range candidates {
+		if b, err := os.ReadFile(p); err == nil {
+			c.Data(http.StatusOK, "application/yaml; charset=utf-8", b)
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"error": "openapi.yaml not found"})
 }
