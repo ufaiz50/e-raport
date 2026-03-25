@@ -236,6 +236,19 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 		return
 	}
 
+	// Optional: validate teacher belongs to this school and has teacher role when provided.
+	if input.TeacherID != nil {
+		var teacher models.User
+		teacherQuery := appCtx.DB.Where("id = ? AND role = ?", *input.TeacherID, "teacher")
+		if schoolID != nil {
+			teacherQuery = teacherQuery.Where("school_id = ?", *schoolID)
+		}
+		if err := teacherQuery.First(&teacher).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "teacher not found"})
+			return
+		}
+	}
+
 	if input.StudentID != nil {
 		var student models.Student
 		if err := appCtx.DB.Where("id = ? AND school_id = ?", *input.StudentID, *schoolID).First(&student).Error(); err != nil {
@@ -244,7 +257,7 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 		}
 	}
 
-	book := models.Book{Title: input.Title, Author: input.Author, SchoolID: schoolID, StudentID: input.StudentID}
+	book := models.Book{Title: input.Title, Author: input.Author, SchoolID: schoolID, TeacherID: input.TeacherID, StudentID: input.StudentID}
 
 	appCtx.DB.Create(&book)
 
@@ -333,7 +346,19 @@ func (r *bookRepository) UpdateBook(c *gin.Context) {
 		}
 	}
 
-	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author, SchoolID: schoolID, StudentID: input.StudentID})
+	if input.TeacherID != nil {
+		var teacher models.User
+		teacherQuery := r.DB.Where("id = ? AND role = ?", *input.TeacherID, "teacher")
+		if schoolID != nil {
+			teacherQuery = teacherQuery.Where("school_id = ?", *schoolID)
+		}
+		if err := teacherQuery.First(&teacher).Error(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "teacher not found"})
+			return
+		}
+	}
+
+	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author, SchoolID: schoolID, TeacherID: input.TeacherID, StudentID: input.StudentID})
 
 	c.JSON(http.StatusOK, gin.H{"data": book})
 }
