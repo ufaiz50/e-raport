@@ -34,13 +34,17 @@ func (r *schoolRepository) ListSchools(c *gin.Context) {
 	}
 
 	var total int64
-	if err := r.DB.Model(&models.School{}).Count(&total).Error; err != nil {
+	query := r.DB.Model(&models.School{})
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
+	if err := query.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count schools"})
 		return
 	}
 
 	var schools []models.School
-	r.DB.Offset(offset).Limit(limit).Order("id asc").Find(&schools)
+	query.Offset(offset).Limit(limit).Order("id asc").Find(&schools)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": schools,
@@ -102,7 +106,7 @@ func (r *schoolRepository) CreateSchool(c *gin.Context) {
 // @Router /schools/{id} [put]
 func (r *schoolRepository) UpdateSchool(c *gin.Context) {
 	var school models.School
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&school).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), nil).First(&school).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "school not found"})
 		return
 	}
@@ -142,7 +146,7 @@ func (r *schoolRepository) UpdateSchool(c *gin.Context) {
 // @Router /schools/{id} [delete]
 func (r *schoolRepository) DeleteSchool(c *gin.Context) {
 	var school models.School
-	if err := r.DB.Where("id = ?", c.Param("id")).First(&school).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), nil).First(&school).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "school not found"})
 		return
 	}

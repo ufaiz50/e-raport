@@ -82,7 +82,15 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 	}
 
 	if studentID := c.Query("student_id"); studentID != "" {
-		query = query.Where("student_id = ?", studentID)
+		resolvedStudentID, err := resolveStudentID(r.DB, schoolID, studentID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		query = query.Where("student_id = ?", resolvedStudentID)
+	}
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
 	}
 	if semester := c.Query("semester"); semester != "" {
 		query = query.Where("semester = ?", semester)
@@ -234,7 +242,7 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	}
 
 	var grade models.Grade
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&grade).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&grade).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "grade not found"})
 		return
 	}
@@ -309,7 +317,7 @@ func (r *gradeRepository) DeleteGrade(c *gin.Context) {
 	}
 
 	var grade models.Grade
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&grade).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&grade).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "grade not found"})
 		return
 	}

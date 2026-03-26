@@ -22,6 +22,9 @@ func (r *userRepository) ListTeachers(c *gin.Context) {
 	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
