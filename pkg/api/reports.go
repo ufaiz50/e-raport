@@ -312,6 +312,68 @@ func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": reportCard})
 }
 
+func (r *reportRepository) FinalizeReportCardsByClass(c *gin.Context) {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
+		return
+	}
+
+	classID, err := strconv.Atoi(c.Param("class_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid class_id"})
+		return
+	}
+	semester, err := parseRequiredInt(c, "semester")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	academicYear := c.Query("academic_year")
+	if academicYear == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "academic_year is required"})
+		return
+	}
+
+	var enrollments []models.StudentEnrollment
+	r.DB.Where("school_id = ? AND class_id = ? AND academic_year = ? AND semester = ?", *schoolID, classID, academicYear, semester).Find(&enrollments)
+	if len(enrollments) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no enrollments found for this class and term"})
+		return
+	}
+
+	finalizedCount := 0
+	now := time.Now()
+	for _, enrollment := range enrollments {
+		var grades []models.Grade
+		r.DB.Where("school_id = ? AND student_id = ? AND academic_year = ? AND semester = ?", *schoolID, enrollment.StudentID, academicYear, semester).Find(&grades)
+		if len(grades) == 0 {
+			continue
+		}
+		var attendance models.Attendance
+		if err := r.DB.Where("school_id = ? AND student_id = ? AND academic_year = ? AND semester = ?", *schoolID, enrollment.StudentID, academicYear, semester).First(&attendance).Error(); err != nil {
+			continue
+		}
+		var note models.ReportNote
+		if err := r.DB.Where("school_id = ? AND student_id = ? AND academic_year = ? AND semester = ?", *schoolID, enrollment.StudentID, academicYear, semester).First(&note).Error(); err != nil {
+			continue
+		}
+
+		var reportCard models.ReportCard
+		if err := r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, enrollment.StudentID, semester, academicYear).First(&reportCard).Error(); err != nil {
+			reportCard = models.ReportCard{SchoolID: schoolID, StudentID: enrollment.StudentID, Semester: semester, AcademicYear: academicYear, Status: models.ReportCardFinalized, FinalizedAt: &now}
+			r.DB.Create(&reportCard)
+			finalizedCount++
+			continue
+		}
+		if reportCard.Status != models.ReportCardFinalized {
+			r.DB.Model(&reportCard).Updates(models.ReportCard{Status: models.ReportCardFinalized, FinalizedAt: &now})
+			finalizedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"finalized_count": finalizedCount}})
+}
+
 func (r *reportRepository) renderStudentReportPDF(pdf *gofpdf.Fpdf, view reportView) {
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 14)

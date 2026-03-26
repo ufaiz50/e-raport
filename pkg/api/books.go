@@ -239,7 +239,7 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 	// Optional: validate teacher belongs to this school and has teacher role when provided.
 	if input.TeacherID != nil {
 		var teacher models.User
-		teacherQuery := appCtx.DB.Where("id = ? AND role = ?", *input.TeacherID, "teacher")
+		teacherQuery := appCtx.DB.Where("id = ? AND role = ?", *input.TeacherID, "guru")
 		if schoolID != nil {
 			teacherQuery = teacherQuery.Where("school_id = ?", *schoolID)
 		}
@@ -348,7 +348,7 @@ func (r *bookRepository) UpdateBook(c *gin.Context) {
 
 	if input.TeacherID != nil {
 		var teacher models.User
-		teacherQuery := r.DB.Where("id = ? AND role = ?", *input.TeacherID, "teacher")
+		teacherQuery := r.DB.Where("id = ? AND role = ?", *input.TeacherID, "guru")
 		if schoolID != nil {
 			teacherQuery = teacherQuery.Where("school_id = ?", *schoolID)
 		}

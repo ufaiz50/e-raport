@@ -31,6 +31,8 @@ type dashboardTotals struct {
 	Grades      int64 `json:"grades"`
 	Attendances int64 `json:"attendances"`
 	ReportNotes int64 `json:"report_notes"`
+	SubjectsWithoutTeacher int64 `json:"subjects_without_teacher"`
+	IncompleteStudents int64 `json:"incomplete_students"`
 }
 
 type semesterTrendItem struct {
@@ -64,12 +66,14 @@ func (r *dashboardRepository) Summary(c *gin.Context) {
 	gradesCount := r.DB.Model(&models.Grade{})
 	attCount := r.DB.Model(&models.Attendance{})
 	notesCount := r.DB.Model(&models.ReportNote{})
+	subjectsWithoutTeacherCount := r.DB.Model(&models.Book{}).Where("teacher_id IS NULL")
 	if schoolID != nil {
 		studentsCount = studentsCount.Where("school_id = ?", *schoolID)
 		classesCount = classesCount.Where("school_id = ?", *schoolID)
 		gradesCount = gradesCount.Where("school_id = ?", *schoolID)
 		attCount = attCount.Where("school_id = ?", *schoolID)
 		notesCount = notesCount.Where("school_id = ?", *schoolID)
+		subjectsWithoutTeacherCount = subjectsWithoutTeacherCount.Where("school_id = ?", *schoolID)
 	}
 
 	studentsCount.Count(&resp.Totals.Students)
@@ -77,6 +81,7 @@ func (r *dashboardRepository) Summary(c *gin.Context) {
 	gradesCount.Count(&resp.Totals.Grades)
 	attCount.Count(&resp.Totals.Attendances)
 	notesCount.Count(&resp.Totals.ReportNotes)
+	subjectsWithoutTeacherCount.Count(&resp.Totals.SubjectsWithoutTeacher)
 
 	var students []models.Student
 	studentQuery := r.DB.Order("id asc")
@@ -115,6 +120,7 @@ func (r *dashboardRepository) Summary(c *gin.Context) {
 
 	resp.SemesterTrends = buildSemesterTrends(grades)
 	resp.ClassCompleteness = buildClassCompleteness(classes, students, grades, attendances, notes)
+	resp.Totals.IncompleteStudents = countIncompleteStudents(students, grades, attendances, notes)
 	resp.Recommendations = buildRecommendations(resp.Totals, resp.ClassCompleteness)
 
 	c.JSON(http.StatusOK, gin.H{"data": resp})
@@ -244,6 +250,9 @@ func buildRecommendations(t dashboardTotals, classes []classCompletenessItem) []
 	if t.ReportNotes < t.Students {
 		tips = append(tips, "Isi catatan wali kelas untuk personalisasi evaluasi siswa.")
 	}
+	if t.SubjectsWithoutTeacher > 0 {
+		tips = append(tips, "Masih ada mata pelajaran tanpa guru pengampu. Lengkapi agar pengajaran konsisten.")
+	}
 	if len(classes) > 0 && classes[0].TotalStudents > 0 && classes[0].CompletenessPct < 70 {
 		tips = append(tips, "Prioritaskan perbaikan data pada kelas dengan completeness terendah.")
 	}
@@ -254,4 +263,20 @@ func buildRecommendations(t dashboardTotals, classes []classCompletenessItem) []
 		return tips[:4]
 	}
 	return tips
+}
+
+func countIncompleteStudents(students []models.Student, grades []models.Grade, attendances []models.Attendance, notes []models.ReportNote) int64 {
+	gradeStudent := map[uint]bool{}
+	for _, g := range grades { gradeStudent[g.StudentID] = true }
+	attendanceStudent := map[uint]bool{}
+	for _, a := range attendances { attendanceStudent[a.StudentID] = true }
+	noteStudent := map[uint]bool{}
+	for _, n := range notes { noteStudent[n.StudentID] = true }
+	var total int64
+	for _, s := range students {
+		if !gradeStudent[s.ID] || !attendanceStudent[s.ID] || !noteStudent[s.ID] {
+			total++
+		}
+	}
+	return total
 }

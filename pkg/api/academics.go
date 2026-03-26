@@ -382,7 +382,7 @@ func (r *academicRepository) CreateTeaching(c *gin.Context) {
 		return
 	}
 	var teacher models.User
-	if err := r.DB.Where("id = ? AND school_id = ? AND role = ?", input.TeacherID, *schoolID, "teacher").First(&teacher).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ? AND role = ?", input.TeacherID, *schoolID, "guru").First(&teacher).Error(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "teacher not found"})
 		return
 	}
@@ -433,7 +433,7 @@ func (r *academicRepository) UpdateTeaching(c *gin.Context) {
 		return
 	}
 	var teacher models.User
-	if err := r.DB.Where("id = ? AND school_id = ? AND role = ?", input.TeacherID, *schoolID, "teacher").First(&teacher).Error(); err != nil {
+	if err := r.DB.Where("id = ? AND school_id = ? AND role = ?", input.TeacherID, *schoolID, "guru").First(&teacher).Error(); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "teacher not found"})
 		return
 	}
