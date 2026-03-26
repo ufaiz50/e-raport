@@ -23,6 +23,12 @@ type gradeRepository struct {
 	Ctx *context.Context
 }
 
+type gradeResponse struct {
+	models.Grade
+	SubjectID   uint   `json:"subject_id"`
+	SubjectName string `json:"subject_name,omitempty"`
+}
+
 func NewGradeRepository(db database.Database, ctx *context.Context) *gradeRepository {
 	return &gradeRepository{DB: db, Ctx: ctx}
 }
@@ -97,13 +103,23 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 		return
 	}
 
+	responses := make([]gradeResponse, 0, len(grades))
+	for _, grade := range grades {
+		resp := gradeResponse{Grade: grade, SubjectID: grade.BookID}
+		var book models.Book
+		if err := r.DB.Where("id = ?", grade.BookID).First(&book).Error(); err == nil {
+			resp.SubjectName = book.Title
+		}
+		responses = append(responses, resp)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": grades,
+		"data": responses,
 		"meta": gin.H{
 			"offset": offset,
 			"limit":  limit,
 			"total":  total,
-			"count":  len(grades),
+			"count":  len(responses),
 		},
 	})
 }

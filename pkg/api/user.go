@@ -24,6 +24,7 @@ type UserRepository interface {
 	RefreshTokenHandler(c *gin.Context)
 	LogoutHandler(c *gin.Context)
 	RegisterHandler(c *gin.Context)
+	MeHandler(c *gin.Context)
 }
 
 // bookRepository holds shared resources like database and Redis client
@@ -252,4 +253,25 @@ func (r *userRepository) RegisterHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Registration successful"})
+}
+
+func (r *userRepository) MeHandler(c *gin.Context) {
+	claimsAny, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	claims, ok := claimsAny.(map[string]any)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid auth context"})
+		return
+	}
+	username, _ := claims["username"].(string)
+	var user models.User
+	if err := r.DB.Where("username = ?", username).First(&user).Error(); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	user.Password = ""
+	c.JSON(http.StatusOK, gin.H{"data": user})
 }

@@ -133,6 +133,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 		v1.POST("/refresh", middleware.APIKeyAuth(), userRepository.RefreshTokenHandler)
 		v1.POST("/logout", middleware.APIKeyAuth(), userRepository.LogoutHandler)
 		v1.POST("/register", middleware.APIKeyAuth(), userRepository.RegisterHandler)
+		v1.GET("/me", middleware.APIKeyAuth(), middleware.JWTAuth(), userRepository.MeHandler)
 		v1.GET("/teachers", middleware.APIKeyAuth(), middleware.JWTAuth(), userRepository.ListTeachers)
 	}
 	r.GET("/docs", ScalarDocs)
