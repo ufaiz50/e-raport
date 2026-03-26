@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -159,15 +158,17 @@ func predicate(score float64) string {
 
 // PrintReportCard godoc
 func (r *reportRepository) PrintReportCard(c *gin.Context) {
-	if _, _, ok := requireTenant(c); !ok {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
 		return
 	}
 
-	studentID, err := strconv.Atoi(c.Param("student_id"))
+	studentIDResolved, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	studentID := int(studentIDResolved)
 
 	view, statusCode, err := r.buildReportView(studentID, c)
 	if err != nil {
@@ -186,15 +187,17 @@ func (r *reportRepository) PrintReportCard(c *gin.Context) {
 }
 
 func (r *reportRepository) PrintReportCardPDF(c *gin.Context) {
-	if _, _, ok := requireTenant(c); !ok {
+	schoolID, _, ok := requireTenant(c)
+	if !ok {
 		return
 	}
 
-	studentID, err := strconv.Atoi(c.Param("student_id"))
+	studentIDResolved, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	studentID := int(studentIDResolved)
 
 	view, statusCode, err := r.buildReportView(studentID, c)
 	if err != nil {
@@ -217,11 +220,12 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 		return
 	}
 
-	classID, err := strconv.Atoi(c.Param("class_id"))
+	classIDResolved, err := resolveClassID(r.DB, schoolID, c.Param("class_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid class_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	classID := int(classIDResolved)
 
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
@@ -269,11 +273,12 @@ func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
 		return
 	}
 
-	studentID, err := strconv.Atoi(c.Param("student_id"))
+	studentIDResolved, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	studentID := int(studentIDResolved)
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -318,11 +323,12 @@ func (r *reportRepository) FinalizeReportCardsByClass(c *gin.Context) {
 		return
 	}
 
-	classID, err := strconv.Atoi(c.Param("class_id"))
+	classIDResolved, err := resolveClassID(r.DB, schoolID, c.Param("class_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid class_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	classID := int(classIDResolved)
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

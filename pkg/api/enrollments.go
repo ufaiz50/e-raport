@@ -34,8 +34,16 @@ func (r *enrollmentRepository) FindEnrollments(c *gin.Context) {
 	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
 	if studentID := c.Query("student_id"); studentID != "" {
-		query = query.Where("student_id = ?", studentID)
+		resolvedStudentID, err := resolveStudentID(r.DB, schoolID, studentID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		query = query.Where("student_id = ?", resolvedStudentID)
 	}
 	if academicYear := c.Query("academic_year"); academicYear != "" {
 		query = query.Where("academic_year = ?", academicYear)
@@ -120,7 +128,12 @@ func (r *enrollmentRepository) CloseEnrollment(c *gin.Context) {
 	}
 
 	var enrollment models.StudentEnrollment
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&enrollment).Error(); err != nil {
+	resolvedEnrollmentID, err := resolveEnrollmentID(r.DB, schoolID, c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	if err := r.DB.Where("id = ? AND school_id = ?", resolvedEnrollmentID, *schoolID).First(&enrollment).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "enrollment not found"})
 		return
 	}
