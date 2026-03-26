@@ -54,6 +54,9 @@ func (r *bookRepository) FindSubjects(c *gin.Context) {
 	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
 	if teacherID := c.Query("teacher_id"); teacherID != "" {
 		query = query.Where("teacher_id = ?", teacherID)
 	}
@@ -140,7 +143,7 @@ func (r *bookRepository) FindSubject(c *gin.Context) {
 		return
 	}
 	var book models.Book
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&book).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "subject not found"})
 		return
 	}
@@ -173,7 +176,7 @@ func (r *bookRepository) UpdateSubject(c *gin.Context) {
 		return
 	}
 	var book models.Book
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&book).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "subject not found"})
 		return
 	}

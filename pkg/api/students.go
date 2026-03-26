@@ -83,6 +83,9 @@ func (r *studentRepository) FindStudents(c *gin.Context) {
 	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -198,7 +201,7 @@ func (r *studentRepository) FindStudent(c *gin.Context) {
 	}
 
 	var student models.Student
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&student).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}
@@ -232,7 +235,7 @@ func (r *studentRepository) UpdateStudent(c *gin.Context) {
 	}
 
 	var student models.Student
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&student).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&student).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}

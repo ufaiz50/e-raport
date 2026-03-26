@@ -43,6 +43,9 @@ func (r *classRepository) FindClasses(c *gin.Context) {
 	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
+	if uuid := c.Query("uuid"); uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -99,7 +102,7 @@ func (r *classRepository) UpdateClass(c *gin.Context) {
 	}
 
 	var class models.Class
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&class).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&class).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class not found"})
 		return
 	}
@@ -117,7 +120,7 @@ func (r *classRepository) DeleteClass(c *gin.Context) {
 	}
 
 	var class models.Class
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&class).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&class).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class not found"})
 		return
 	}
