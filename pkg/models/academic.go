@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type AcademicYear struct {
+	PublicUUID
 	ID        uint      `json:"id" gorm:"primary_key"`
 	SchoolID  *uint     `json:"school_id,omitempty" gorm:"index"`
 	School    *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -13,6 +18,7 @@ type AcademicYear struct {
 }
 
 type Semester struct {
+	PublicUUID
 	ID             uint      `json:"id" gorm:"primary_key"`
 	SchoolID       *uint     `json:"school_id,omitempty" gorm:"index"`
 	School         *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -26,6 +32,7 @@ type Semester struct {
 }
 
 type Curriculum struct {
+	PublicUUID
 	ID          uint      `json:"id" gorm:"primary_key"`
 	SchoolID    *uint     `json:"school_id,omitempty" gorm:"index"`
 	School      *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -37,6 +44,7 @@ type Curriculum struct {
 }
 
 type Subject struct {
+	PublicUUID
 	ID        uint      `json:"id" gorm:"primary_key"`
 	SchoolID  *uint     `json:"school_id,omitempty" gorm:"index"`
 	School    *School   `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -47,6 +55,7 @@ type Subject struct {
 }
 
 type CurriculumSubject struct {
+	PublicUUID
 	ID           uint       `json:"id" gorm:"primary_key"`
 	CurriculumID uint       `json:"curriculum_id" gorm:"index;not null"`
 	Curriculum   *Curriculum `json:"curriculum,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -57,6 +66,7 @@ type CurriculumSubject struct {
 }
 
 type Teaching struct {
+	PublicUUID
 	ID         uint      `json:"id" gorm:"primary_key"`
 	SchoolID   *uint     `json:"school_id,omitempty" gorm:"index"`
 	TeacherID  uint      `json:"teacher_id" gorm:"index;not null"`
@@ -66,3 +76,10 @@ type Teaching struct {
 	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt  time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (m *AcademicYear) BeforeCreate(_ *gorm.DB) error { m.UUID = ensureUUID(m.UUID); return nil }
+func (m *Semester) BeforeCreate(_ *gorm.DB) error { m.UUID = ensureUUID(m.UUID); return nil }
+func (m *Curriculum) BeforeCreate(_ *gorm.DB) error { m.UUID = ensureUUID(m.UUID); return nil }
+func (m *Subject) BeforeCreate(_ *gorm.DB) error { m.UUID = ensureUUID(m.UUID); return nil }
+func (m *CurriculumSubject) BeforeCreate(_ *gorm.DB) error { m.UUID = ensureUUID(m.UUID); return nil }
+func (m *Teaching) BeforeCreate(_ *gorm.DB) error { m.UUID = ensureUUID(m.UUID); return nil }

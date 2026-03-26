@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Book struct {
+	PublicUUID
 	ID        uint      `json:"id" gorm:"primary_key"`
 	Title     string    `json:"title"`
 	Author    string    `json:"author"`
@@ -15,6 +20,8 @@ type Book struct {
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (b *Book) BeforeCreate(_ *gorm.DB) error { b.UUID = ensureUUID(b.UUID); return nil }
 
 type CreateBook struct {
 	Title     string `json:"title" binding:"required"`

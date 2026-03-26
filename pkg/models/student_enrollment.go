@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type StudentEnrollment struct {
+	PublicUUID
 	ID           uint       `json:"id" gorm:"primary_key"`
 	SchoolID     *uint      `json:"school_id,omitempty" gorm:"index;not null"`
 	School       *School    `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -18,6 +23,8 @@ type StudentEnrollment struct {
 	CreatedAt    time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (e *StudentEnrollment) BeforeCreate(_ *gorm.DB) error { e.UUID = ensureUUID(e.UUID); return nil }
 
 type CreateEnrollment struct {
 	SchoolID     *uint      `json:"school_id"`

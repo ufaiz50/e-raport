@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type LoginUser struct {
 	Username string `json:"username" binding:"required"`
@@ -19,6 +23,7 @@ type RegisterUser struct {
 }
 
 type User struct {
+	PublicUUID
 	ID        uint      `json:"id" gorm:"primary_key"`
 	Username  string    `json:"username" gorm:"index:idx_username_school,unique"`
 	SchoolID  *uint     `json:"school_id,omitempty" gorm:"index:idx_username_school,unique"`
@@ -28,3 +33,5 @@ type User struct {
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (u *User) BeforeCreate(_ *gorm.DB) error { u.UUID = ensureUUID(u.UUID); return nil }

@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Attendance struct {
+	PublicUUID
 	ID             uint               `json:"id" gorm:"primary_key"`
 	SchoolID       *uint              `json:"school_id,omitempty" gorm:"index:idx_attendance_term_student_school,unique"`
 	School         *School            `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -17,6 +22,8 @@ type Attendance struct {
 	CreatedAt      time.Time          `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time          `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (a *Attendance) BeforeCreate(_ *gorm.DB) error { a.UUID = ensureUUID(a.UUID); return nil }
 
 type UpsertAttendance struct {
 	SchoolID       *uint  `json:"school_id"`

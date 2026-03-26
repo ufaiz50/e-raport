@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type School struct {
+	PublicUUID
 	ID             uint      `json:"id" gorm:"primary_key"`
 	Name           string    `json:"name" gorm:"uniqueIndex;not null"`
 	Code           string    `json:"code" gorm:"uniqueIndex;not null"`
@@ -15,3 +20,5 @@ type School struct {
 	CreatedAt      time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (s *School) BeforeCreate(_ *gorm.DB) error { s.UUID = ensureUUID(s.UUID); return nil }

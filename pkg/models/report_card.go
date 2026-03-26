@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type ReportCardStatus string
 
@@ -10,6 +14,7 @@ const (
 )
 
 type ReportCard struct {
+	PublicUUID
 	ID           uint             `json:"id" gorm:"primary_key"`
 	SchoolID     *uint            `json:"school_id,omitempty" gorm:"index:idx_report_term_student_school,unique"`
 	School       *School          `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -21,3 +26,5 @@ type ReportCard struct {
 	CreatedAt    time.Time        `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (r *ReportCard) BeforeCreate(_ *gorm.DB) error { r.UUID = ensureUUID(r.UUID); return nil }

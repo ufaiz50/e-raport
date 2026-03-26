@@ -1,8 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type ReportNote struct {
+	PublicUUID
 	ID              uint               `json:"id" gorm:"primary_key"`
 	SchoolID        *uint              `json:"school_id,omitempty" gorm:"index:idx_report_note_term_student_school,unique"`
 	School          *School            `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
@@ -15,6 +20,8 @@ type ReportNote struct {
 	CreatedAt       time.Time          `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt       time.Time          `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+func (r *ReportNote) BeforeCreate(_ *gorm.DB) error { r.UUID = ensureUUID(r.UUID); return nil }
 
 type UpsertReportNote struct {
 	SchoolID        *uint  `json:"school_id"`

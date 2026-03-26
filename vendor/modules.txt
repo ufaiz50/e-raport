@@ -152,6 +152,9 @@ github.com/golang/mock/gomock
 # github.com/golang/snappy v0.0.4
 ## explicit
 github.com/golang/snappy
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
 # github.com/gorilla/css v1.0.0
 ## explicit
 github.com/gorilla/css/scanner
