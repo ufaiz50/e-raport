@@ -10,21 +10,21 @@ import (
 )
 
 type subjectResponse struct {
-	ID        uint         `json:"id"`
+	ID        string       `json:"id"`
 	Name      string       `json:"name"`
 	Title     string       `json:"title"`
-	TeacherID *uint        `json:"teacher_id,omitempty"`
+	TeacherID *string      `json:"teacher_id,omitempty"`
 	Teacher   *models.User `json:"teacher,omitempty"`
-	SchoolID  *uint        `json:"school_id,omitempty"`
+	SchoolID  *string      `json:"school_id,omitempty"`
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at"`
 }
 
 type subjectPayload struct {
-	Name      string `json:"name"`
-	Title     string `json:"title"`
-	TeacherID *uint  `json:"teacher_id"`
-	SchoolID  *uint  `json:"school_id"`
+	Name      string  `json:"name"`
+	Title     string  `json:"title"`
+	TeacherID *string `json:"teacher_id"`
+	SchoolID  *string `json:"school_id"`
 }
 
 func buildSubjectResponse(book models.Book) subjectResponse {
@@ -53,9 +53,6 @@ func (r *bookRepository) FindSubjects(c *gin.Context) {
 	query := r.DB.Model(&models.Book{})
 	if schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
-	}
-	if uuid := c.Query("uuid"); uuid != "" {
-		query = query.Where("uuid = ?", uuid)
 	}
 	if teacherID := c.Query("teacher_id"); teacherID != "" {
 		query = query.Where("teacher_id = ?", teacherID)

@@ -19,32 +19,32 @@ func NewReportSummaryRepository(db database.Database) *reportSummaryRepository {
 }
 
 type reportSummaryStudentItem struct {
-	StudentID      uint   `json:"student_id"`
-	StudentName    string `json:"student_name"`
-	ClassID        uint   `json:"class_id"`
-	ClassName      string `json:"class_name"`
-	HasGrades      bool   `json:"has_grades"`
-	HasAttendance  bool   `json:"has_attendance"`
-	HasReportNote  bool   `json:"has_report_note"`
-	Finalized      bool   `json:"finalized"`
-	CompletenessPct int   `json:"completeness_pct"`
+	StudentID       string `json:"student_id"`
+	StudentName     string `json:"student_name"`
+	ClassID         string `json:"class_id"`
+	ClassName       string `json:"class_name"`
+	HasGrades       bool   `json:"has_grades"`
+	HasAttendance   bool   `json:"has_attendance"`
+	HasReportNote   bool   `json:"has_report_note"`
+	Finalized       bool   `json:"finalized"`
+	CompletenessPct int    `json:"completeness_pct"`
 }
 
 type reportSummaryClassItem struct {
-	ClassID          uint   `json:"class_id"`
-	ClassName        string `json:"class_name"`
-	Level            string `json:"level"`
-	TotalStudents    int    `json:"total_students"`
-	ReadyStudents    int    `json:"ready_students"`
-	FinalizedStudents int   `json:"finalized_students"`
-	CompletenessPct  int    `json:"completeness_pct"`
+	ClassID           string `json:"class_id"`
+	ClassName         string `json:"class_name"`
+	Level             string `json:"level"`
+	TotalStudents     int    `json:"total_students"`
+	ReadyStudents     int    `json:"ready_students"`
+	FinalizedStudents int    `json:"finalized_students"`
+	CompletenessPct   int    `json:"completeness_pct"`
 }
 
 type reportSummaryResponse struct {
-	AcademicYear string                   `json:"academic_year"`
-	Semester     int                      `json:"semester"`
-	Totals       map[string]int           `json:"totals"`
-	Classes      []reportSummaryClassItem `json:"classes"`
+	AcademicYear string                     `json:"academic_year"`
+	Semester     int                        `json:"semester"`
+	Totals       map[string]int             `json:"totals"`
+	Classes      []reportSummaryClassItem   `json:"classes"`
 	Students     []reportSummaryStudentItem `json:"students"`
 }
 
@@ -66,56 +66,49 @@ func (r *reportSummaryRepository) Summary(c *gin.Context) {
 	}
 
 	var enrollments []models.StudentEnrollment
-	enrollmentQuery := r.DB.Where("school_id = ? AND academic_year = ? AND semester = ?", *schoolID, academicYear, semester).Order("id asc")
+	enrollmentQuery := r.DB.Where("school_id = ? AND academic_year = ? AND semester = ?", *schoolID, academicYear, semester).Order("created_at asc")
 	enrollmentQuery.Find(&enrollments)
 
-	studentIDs := map[uint]bool{}
-	classIDs := map[uint]bool{}
-	for _, e := range enrollments {
-		studentIDs[e.StudentID] = true
-		classIDs[e.ClassID] = true
-	}
-
 	var students []models.Student
-	studentQuery := r.DB.Where("school_id = ?", *schoolID).Order("id asc")
+	studentQuery := r.DB.Where("school_id = ?", *schoolID).Order("created_at asc")
 	studentQuery.Find(&students)
-	studentMap := map[uint]models.Student{}
+	studentMap := map[string]models.Student{}
 	for _, s := range students {
 		studentMap[s.ID] = s
 	}
 
 	var classes []models.Class
-	classQuery := r.DB.Where("school_id = ?", *schoolID).Order("id asc")
+	classQuery := r.DB.Where("school_id = ?", *schoolID).Order("created_at asc")
 	classQuery.Find(&classes)
-	classMap := map[uint]models.Class{}
+	classMap := map[string]models.Class{}
 	for _, cls := range classes {
 		classMap[cls.ID] = cls
 	}
 
 	var grades []models.Grade
 	r.DB.Where("school_id = ? AND academic_year = ? AND semester = ?", *schoolID, academicYear, semester).Find(&grades)
-	gradeStudent := map[uint]bool{}
+	gradeStudent := map[string]bool{}
 	for _, g := range grades {
 		gradeStudent[g.StudentID] = true
 	}
 
 	var attendances []models.Attendance
 	r.DB.Where("school_id = ? AND academic_year = ? AND semester = ?", *schoolID, academicYear, semester).Find(&attendances)
-	attendanceStudent := map[uint]bool{}
+	attendanceStudent := map[string]bool{}
 	for _, a := range attendances {
 		attendanceStudent[a.StudentID] = true
 	}
 
 	var notes []models.ReportNote
 	r.DB.Where("school_id = ? AND academic_year = ? AND semester = ?", *schoolID, academicYear, semester).Find(&notes)
-	noteStudent := map[uint]bool{}
+	noteStudent := map[string]bool{}
 	for _, n := range notes {
 		noteStudent[n.StudentID] = true
 	}
 
 	var cards []models.ReportCard
 	r.DB.Where("school_id = ? AND academic_year = ? AND semester = ?", *schoolID, academicYear, semester).Find(&cards)
-	finalizedStudent := map[uint]bool{}
+	finalizedStudent := map[string]bool{}
 	for _, rc := range cards {
 		if rc.Status == models.ReportCardFinalized {
 			finalizedStudent[rc.StudentID] = true
@@ -123,7 +116,7 @@ func (r *reportSummaryRepository) Summary(c *gin.Context) {
 	}
 
 	studentItems := make([]reportSummaryStudentItem, 0, len(enrollments))
-	classAgg := map[uint]*reportSummaryClassItem{}
+	classAgg := map[string]*reportSummaryClassItem{}
 	for _, e := range enrollments {
 		s := studentMap[e.StudentID]
 		cls := classMap[e.ClassID]
@@ -146,14 +139,14 @@ func (r *reportSummaryRepository) Summary(c *gin.Context) {
 			completeness += 33
 		}
 		item := reportSummaryStudentItem{
-			StudentID: e.StudentID,
-			StudentName: studentName,
-			ClassID: e.ClassID,
-			ClassName: cls.Name,
-			HasGrades: hasGrades,
-			HasAttendance: hasAttendance,
-			HasReportNote: hasNote,
-			Finalized: finalized,
+			StudentID:       e.StudentID,
+			StudentName:     studentName,
+			ClassID:         e.ClassID,
+			ClassName:       cls.Name,
+			HasGrades:       hasGrades,
+			HasAttendance:   hasAttendance,
+			HasReportNote:   hasNote,
+			Finalized:       finalized,
 			CompletenessPct: completeness,
 		}
 		studentItems = append(studentItems, item)
@@ -189,14 +182,14 @@ func (r *reportSummaryRepository) Summary(c *gin.Context) {
 
 	resp := reportSummaryResponse{
 		AcademicYear: academicYear,
-		Semester: semester,
+		Semester:     semester,
 		Totals: map[string]int{
-			"students": len(studentItems),
-			"ready_students": countReadyStudents(studentItems),
+			"students":           len(studentItems),
+			"ready_students":     countReadyStudents(studentItems),
 			"finalized_students": countFinalizedStudents(studentItems),
-			"classes": len(classItems),
+			"classes":            len(classItems),
 		},
-		Classes: classItems,
+		Classes:  classItems,
 		Students: studentItems,
 	}
 

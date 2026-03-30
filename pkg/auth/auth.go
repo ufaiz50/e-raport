@@ -12,9 +12,9 @@ import (
 
 // Claims struct to be encoded to JWT
 type Claims struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
-	SchoolID *uint  `json:"school_id,omitempty"`
+	Username string  `json:"username"`
+	Role     string  `json:"role"`
+	SchoolID *string `json:"school_id,omitempty"`
 	jwt.StandardClaims
 }
 
@@ -32,28 +32,21 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func GenerateAccessToken(username string, role string, schoolID *uint) (string, error) {
-	// The expiration time after which the token will be invalid.
+func GenerateAccessToken(username string, role string, schoolID *string) (string, error) {
 	expirationTime := time.Now().Add(15 * time.Minute).Unix()
 
-	// Create the JWT claims, which includes the username and expiration time
 	claims := &Claims{
 		Username: username,
 		Role:     role,
 		SchoolID: schoolID,
 		StandardClaims: jwt.StandardClaims{
-			// In JWT, the expiry time is expressed as unix milliseconds
 			ExpiresAt: expirationTime,
 			Issuer:    username,
 		},
 	}
 
-	// Declare the token with the algorithm used for signing, and the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Create the JWT string
 	tokenString, err := token.SignedString(JwtKey)
-
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +54,7 @@ func GenerateAccessToken(username string, role string, schoolID *uint) (string, 
 	return tokenString, nil
 }
 
-func GenerateRefreshToken(username string, role string, schoolID *uint) (string, error) {
+func GenerateRefreshToken(username string, role string, schoolID *string) (string, error) {
 	expirationTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 
 	claims := &Claims{
@@ -102,12 +95,12 @@ func ParseRefreshToken(tokenStr string) (*Claims, error) {
 }
 
 // Backward compatibility
-func GenerateToken(username string, role string, schoolID *uint) (string, error) {
+func GenerateToken(username string, role string, schoolID *string) (string, error) {
 	return GenerateAccessToken(username, role, schoolID)
 }
 
 func GenerateRandomKey() string {
-	key := make([]byte, 32) // generate a 256 bit key
+	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	if err != nil {
 		panic("Failed to generate random key: " + err.Error())

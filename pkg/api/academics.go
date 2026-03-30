@@ -40,11 +40,11 @@ func atoiSafe(s string) int {
 	return n
 }
 
-func (r *academicRepository) deactivateOtherAcademicYears(schoolID *uint, keepID uint) {
+func (r *academicRepository) deactivateOtherAcademicYears(schoolID *string, keepID string) {
 	r.DB.Model(&models.AcademicYear{}).Where("school_id = ? AND id <> ?", *schoolID, keepID).Updates(map[string]interface{}{"is_active": false})
 }
 
-func (r *academicRepository) deactivateOtherSemesters(schoolID *uint, keepID uint) {
+func (r *academicRepository) deactivateOtherSemesters(schoolID *string, keepID string) {
 	r.DB.Model(&models.Semester{}).Where("school_id = ? AND id <> ?", *schoolID, keepID).Updates(map[string]interface{}{"is_active": false})
 }
 
@@ -67,7 +67,7 @@ func (r *academicRepository) ListAcademicYears(c *gin.Context) {
 		return
 	}
 	var rows []models.AcademicYear
-	if err := query.Offset(offset).Limit(limit).Order("id desc").Find(&rows).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Order("created_at desc").Find(&rows).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch academic years"})
 		return
 	}
@@ -119,7 +119,7 @@ func (r *academicRepository) UpdateAcademicYear(c *gin.Context) {
 		return
 	}
 	var row models.AcademicYear
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "academic year not found"})
 		return
 	}
@@ -141,7 +141,7 @@ func (r *academicRepository) DeleteAcademicYear(c *gin.Context) {
 		return
 	}
 	var row models.AcademicYear
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "academic year not found"})
 		return
 	}
@@ -165,7 +165,7 @@ func (r *academicRepository) ListSemesters(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 	var rows []models.Semester
-	query.Offset(offset).Limit(limit).Order("id desc").Find(&rows)
+	query.Offset(offset).Limit(limit).Order("created_at desc").Find(&rows)
 	c.JSON(http.StatusOK, gin.H{"data": rows, "meta": gin.H{"offset": offset, "limit": limit, "total": total, "count": len(rows)}})
 }
 
@@ -227,7 +227,7 @@ func (r *academicRepository) UpdateSemester(c *gin.Context) {
 		return
 	}
 	var row models.Semester
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "semester not found"})
 		return
 	}
@@ -254,7 +254,7 @@ func (r *academicRepository) DeleteSemester(c *gin.Context) {
 		return
 	}
 	var row models.Semester
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "semester not found"})
 		return
 	}
@@ -278,7 +278,7 @@ func (r *academicRepository) ListCurriculums(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 	var rows []models.Curriculum
-	query.Offset(offset).Limit(limit).Order("id desc").Find(&rows)
+	query.Offset(offset).Limit(limit).Order("created_at desc").Find(&rows)
 	c.JSON(http.StatusOK, gin.H{"data": rows, "meta": gin.H{"offset": offset, "limit": limit, "total": total, "count": len(rows)}})
 }
 
@@ -324,7 +324,7 @@ func (r *academicRepository) UpdateCurriculum(c *gin.Context) {
 		return
 	}
 	var row models.Curriculum
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "curriculum not found"})
 		return
 	}
@@ -343,7 +343,7 @@ func (r *academicRepository) DeleteCurriculum(c *gin.Context) {
 		return
 	}
 	var row models.Curriculum
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "curriculum not found"})
 		return
 	}
@@ -367,7 +367,7 @@ func (r *academicRepository) ListTeachings(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 	var rows []models.Teaching
-	query.Offset(offset).Limit(limit).Order("id desc").Find(&rows)
+	query.Offset(offset).Limit(limit).Order("created_at desc").Find(&rows)
 	c.JSON(http.StatusOK, gin.H{"data": rows, "meta": gin.H{"offset": offset, "limit": limit, "total": total, "count": len(rows)}})
 }
 
@@ -455,7 +455,7 @@ func (r *academicRepository) UpdateTeaching(c *gin.Context) {
 		}
 	}
 	var row models.Teaching
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "teaching not found"})
 		return
 	}
@@ -482,7 +482,7 @@ func (r *academicRepository) DeleteTeaching(c *gin.Context) {
 		return
 	}
 	var row models.Teaching
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&row).Error; err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&row).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "teaching not found"})
 		return
 	}

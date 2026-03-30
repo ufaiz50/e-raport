@@ -7,8 +7,7 @@ import (
 )
 
 type Student struct {
-	PublicUUID
-	ID          uint       `json:"id" gorm:"primary_key"`
+	UUIDPrimaryKey
 	FirstName   string     `json:"first_name"`
 	LastName    string     `json:"last_name"`
 	Email       string     `json:"email" gorm:"index:idx_student_email_school,unique"`
@@ -23,16 +22,16 @@ type Student struct {
 	ParentName  string     `json:"parent_name"`
 	ParentPhone string     `json:"parent_phone"`
 	Status      string     `json:"status" gorm:"type:varchar(20);default:active"`
-	SchoolID    *uint      `json:"school_id,omitempty" gorm:"index:idx_student_email_school,unique"`
-	School      *School    `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	ClassID     *uint      `json:"class_id,omitempty"`
-	Class       *Class     `json:"class,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	SchoolID    *string    `json:"school_id,omitempty" gorm:"type:uuid;index:idx_student_email_school,unique"`
+	School      *School    `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:SchoolID;references:ID"`
+	ClassID     *string    `json:"class_id,omitempty" gorm:"type:uuid"`
+	Class       *Class     `json:"class,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:ClassID;references:ID"`
 	Type        string     `json:"-" gorm:"column:student_type;type:varchar(20);not null;default:junior"`
 	CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (s *Student) BeforeCreate(_ *gorm.DB) error { s.UUID = ensureUUID(s.UUID); return nil }
+func (s *Student) BeforeCreate(_ *gorm.DB) error { s.ID = ensureUUID(s.ID); return nil }
 
 type CreateStudent struct {
 	FirstName   string     `json:"first_name" binding:"required"`
@@ -49,8 +48,8 @@ type CreateStudent struct {
 	ParentName  string     `json:"parent_name"`
 	ParentPhone string     `json:"parent_phone"`
 	Status      string     `json:"status"`
-	SchoolID    *uint      `json:"school_id"`
-	ClassID     *uint      `json:"class_id" binding:"required"`
+	SchoolID    *string    `json:"school_id"`
+	ClassID     *string    `json:"class_id" binding:"required"`
 }
 
 type UpdateStudent struct {
@@ -68,6 +67,6 @@ type UpdateStudent struct {
 	ParentName  string     `json:"parent_name"`
 	ParentPhone string     `json:"parent_phone"`
 	Status      string     `json:"status"`
-	SchoolID    *uint      `json:"school_id"`
-	ClassID     *uint      `json:"class_id" binding:"required"`
+	SchoolID    *string    `json:"school_id"`
+	ClassID     *string    `json:"class_id" binding:"required"`
 }

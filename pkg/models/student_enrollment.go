@@ -7,14 +7,13 @@ import (
 )
 
 type StudentEnrollment struct {
-	PublicUUID
-	ID           uint       `json:"id" gorm:"primary_key"`
-	SchoolID     *uint      `json:"school_id,omitempty" gorm:"index;not null"`
-	School       *School    `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	StudentID    uint       `json:"student_id" gorm:"index;not null"`
-	Student      *Student   `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	ClassID      uint       `json:"class_id" gorm:"index;not null"`
-	Class        *Class     `json:"class,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	UUIDPrimaryKey
+	SchoolID     *string    `json:"school_id,omitempty" gorm:"type:uuid;index;not null"`
+	School       *School    `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:SchoolID;references:ID"`
+	StudentID    string     `json:"student_id" gorm:"type:uuid;index;not null"`
+	Student      *Student   `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StudentID;references:ID"`
+	ClassID      string     `json:"class_id" gorm:"type:uuid;index;not null"`
+	Class        *Class     `json:"class,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:ClassID;references:ID"`
 	AcademicYear string     `json:"academic_year" gorm:"type:varchar(20);index:idx_student_term,unique;not null"`
 	Semester     int        `json:"semester" gorm:"index:idx_student_term,unique;not null"`
 	IsActive     bool       `json:"is_active" gorm:"index;default:true"`
@@ -24,12 +23,12 @@ type StudentEnrollment struct {
 	UpdatedAt    time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (e *StudentEnrollment) BeforeCreate(_ *gorm.DB) error { e.UUID = ensureUUID(e.UUID); return nil }
+func (e *StudentEnrollment) BeforeCreate(_ *gorm.DB) error { e.ID = ensureUUID(e.ID); return nil }
 
 type CreateEnrollment struct {
-	SchoolID     *uint      `json:"school_id"`
-	StudentID    uint       `json:"student_id" binding:"required"`
-	ClassID      uint       `json:"class_id" binding:"required"`
+	SchoolID     *string    `json:"school_id"`
+	StudentID    string     `json:"student_id" binding:"required"`
+	ClassID      string     `json:"class_id" binding:"required"`
 	AcademicYear string     `json:"academic_year" binding:"required"`
 	Semester     int        `json:"semester" binding:"required,min=1,max=2"`
 	StartDate    *time.Time `json:"start_date"`

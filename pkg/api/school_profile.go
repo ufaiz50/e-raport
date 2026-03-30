@@ -39,7 +39,7 @@ func (r *schoolProfileRepository) Get(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "school profile not found"})
 			return
 		}
-	} else if err := r.DB.Order("id asc").First(&school).Error; err != nil {
+	} else if err := r.DB.Order("created_at asc").First(&school).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "school profile not found"})
 		return
 	}

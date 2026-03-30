@@ -7,7 +7,6 @@ import (
 	"golang-rest-api-template/pkg/database"
 	"golang-rest-api-template/pkg/models"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,14 +21,12 @@ type BookRepository interface {
 	DeleteBook(c *gin.Context)
 }
 
-// bookRepository holds shared resources like database and Redis client
 type bookRepository struct {
 	DB          database.Database
 	RedisClient cache.Cache
 	Ctx         *context.Context
 }
 
-// NewAppContext creates a new AppContext
 func NewBookRepository(db database.Database, redisClient cache.Cache, ctx *context.Context) *bookRepository {
 	return &bookRepository{
 		DB:          db,
@@ -38,31 +35,10 @@ func NewBookRepository(db database.Database, redisClient cache.Cache, ctx *conte
 	}
 }
 
-// @BasePath /api/v1
-
-// Healthcheck godoc
-// @Summary ping example
-// @Schemes
-// @Description do ping
-// @Tags example
-// @Accept json
-// @Produce json
-// @Success 200 {string} ok
-// @Router / [get]
 func (r *bookRepository) Healthcheck(c *gin.Context) {
 	c.JSON(http.StatusOK, "ok")
 }
 
-// FindBooks godoc
-// @Summary Get all books with pagination
-// @Description Get a list of all books with optional pagination
-// @Tags books
-// @Security ApiKeyAuth
-// @Produce json
-// @Param offset query int false "Offset for pagination" default(0)
-// @Param limit query int false "Limit for pagination" default(10)
-// @Success 200 {array} models.Book "Successfully retrieved list of books"
-// @Router /books [get]
 func (r *bookRepository) FindBooks(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {
@@ -80,41 +56,17 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		} `json:"meta"`
 	}
 
-	// Get query params
-	offsetQuery := c.DefaultQuery("offset", "0")
-	limitQuery := c.DefaultQuery("limit", "10")
-
-	// Convert query params to integers
-	offset, err := strconv.Atoi(offsetQuery)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset format"})
+	offset, limit, ok := parsePagination(c)
+	if !ok {
 		return
 	}
 
-	limit, err := strconv.Atoi(limitQuery)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit format"})
-		return
-	}
-
-	if offset < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset format"})
-		return
-	}
-
-	if limit <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit format"})
-		return
-	}
-
-	// Create a cache key based on query params and effective school scope
 	scope := "all"
 	if schoolID != nil {
-		scope = strconv.Itoa(int(*schoolID))
+		scope = *schoolID
 	}
-	cacheKey := "books_school_" + scope + "_offset_" + offsetQuery + "_limit_" + limitQuery
+	cacheKey := "books_school_" + scope + "_offset_" + c.DefaultQuery("offset", "0") + "_limit_" + c.DefaultQuery("limit", "10")
 
-	// Try fetching the data from Redis first
 	cachedBooks, err := r.RedisClient.Get(*r.Ctx, cacheKey).Result()
 	if err == nil {
 		var cachedPayload booksCachePayload
@@ -131,22 +83,18 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 			return
 		}
 
-		// Backward compatibility for older cache format ([]Book only)
-		if err := json.Unmarshal([]byte(cachedBooks), &books); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unmarshal cached data"})
+		if err := json.Unmarshal([]byte(cachedBooks), &books); err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"data": books,
+				"meta": gin.H{
+					"offset": offset,
+					"limit":  limit,
+					"total":  len(books),
+					"count":  len(books),
+				},
+			})
 			return
 		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": books,
-			"meta": gin.H{
-				"offset": offset,
-				"limit":  limit,
-				"total":  len(books),
-				"count":  len(books),
-			},
-		})
-		return
 	}
 
 	var allBooks []models.Book
@@ -157,7 +105,6 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 	countQuery.Find(&allBooks)
 	total := len(allBooks)
 
-	// If cache missed, fetch data from the database
 	dataQuery := r.DB.Offset(offset).Limit(limit)
 	if schoolID != nil {
 		dataQuery = dataQuery.Where("school_id = ?", *schoolID)
@@ -176,7 +123,6 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 		}
 	}
 
-	// Serialize books object and store it in Redis
 	cachePayload := booksCachePayload{Data: books}
 	cachePayload.Meta.Offset = offset
 	cachePayload.Meta.Limit = limit
@@ -184,14 +130,8 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 	cachePayload.Meta.Count = len(books)
 
 	serializedBooks, err := json.Marshal(cachePayload)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal data"})
-		return
-	}
-	err = r.RedisClient.Set(*r.Ctx, cacheKey, serializedBooks, time.Minute).Err() // Here TTL is set to one hour
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set cache"})
-		return
+	if err == nil {
+		_ = r.RedisClient.Set(*r.Ctx, cacheKey, serializedBooks, time.Minute).Err()
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -205,19 +145,6 @@ func (r *bookRepository) FindBooks(c *gin.Context) {
 	})
 }
 
-// CreateBook godoc
-// @Summary Create a new book
-// @Description Create a new book with the given input data
-// @Tags books
-// @Security ApiKeyAuth
-// @Security JwtAuth
-// @Accept  json
-// @Produce  json
-// @Param   input     body   models.CreateBook   true   "Create book object"
-// @Success 201 {object} models.Book "Successfully created book"
-// @Failure 400 {string} string "Bad Request"
-// @Failure 401 {string} string "Unauthorized"
-// @Router /books [post]
 func (r *bookRepository) CreateBook(c *gin.Context) {
 	appCtx, exists := c.MustGet("appCtx").(*bookRepository)
 	if !exists {
@@ -236,7 +163,6 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 		return
 	}
 
-	// Optional: validate teacher belongs to this school and has teacher role when provided.
 	if input.TeacherID != nil {
 		var teacher models.User
 		teacherQuery := appCtx.DB.Where("id = ? AND role = ?", *input.TeacherID, "guru")
@@ -258,11 +184,9 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 	}
 
 	book := models.Book{Title: input.Title, Author: input.Author, SchoolID: schoolID, TeacherID: input.TeacherID, StudentID: input.StudentID}
-
 	appCtx.DB.Create(&book)
 
-	// Invalidate cache
-	keysPattern := "books_school_" + strconv.Itoa(int(*schoolID)) + "_*"
+	keysPattern := "books_school_" + *schoolID + "_*"
 	keys, err := appCtx.RedisClient.Keys(*appCtx.Ctx, keysPattern).Result()
 	if err == nil {
 		for _, key := range keys {
@@ -273,16 +197,6 @@ func (r *bookRepository) CreateBook(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": book})
 }
 
-// FindBook godoc
-// @Summary Find a book by ID
-// @Description Get details of a book by its ID
-// @Tags books
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path string true "Book ID"
-// @Success 200 {object} models.Book "Successfully retrieved book"
-// @Failure 404 {string} string "Book not found"
-// @Router /books/{id} [get]
 func (r *bookRepository) FindBook(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {
@@ -290,8 +204,7 @@ func (r *bookRepository) FindBook(c *gin.Context) {
 	}
 
 	var book models.Book
-
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&book).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "book not found"})
 		return
 	}
@@ -306,19 +219,6 @@ func (r *bookRepository) FindBook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": book})
 }
 
-// UpdateBook godoc
-// @Summary Update a book by ID
-// @Description Update the book details for the given ID
-// @Tags books
-// @Security ApiKeyAuth
-// @Accept  json
-// @Produce  json
-// @Param id path string true "Book ID"
-// @Param input body models.UpdateBook true "Update book object"
-// @Success 200 {object} models.Book "Successfully updated book"
-// @Failure 400 {string} string "Bad Request"
-// @Failure 404 {string} string "book not found"
-// @Router /books/{id} [put]
 func (r *bookRepository) UpdateBook(c *gin.Context) {
 	var input models.UpdateBook
 
@@ -333,7 +233,7 @@ func (r *bookRepository) UpdateBook(c *gin.Context) {
 	}
 
 	var book models.Book
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&book).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "book not found"})
 		return
 	}
@@ -359,20 +259,9 @@ func (r *bookRepository) UpdateBook(c *gin.Context) {
 	}
 
 	r.DB.Model(&book).Updates(models.Book{Title: input.Title, Author: input.Author, SchoolID: schoolID, TeacherID: input.TeacherID, StudentID: input.StudentID})
-
 	c.JSON(http.StatusOK, gin.H{"data": book})
 }
 
-// DeleteBook godoc
-// @Summary Delete a book by ID
-// @Description Delete the book with the given ID
-// @Tags books
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path string true "Book ID"
-// @Success 204 {string} string "Successfully deleted book"
-// @Failure 404 {string} string "book not found"
-// @Router /books/{id} [delete]
 func (r *bookRepository) DeleteBook(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {
@@ -380,13 +269,11 @@ func (r *bookRepository) DeleteBook(c *gin.Context) {
 	}
 
 	var book models.Book
-
-	if err := r.DB.Where("id = ? AND school_id = ?", c.Param("id"), *schoolID).First(&book).Error(); err != nil {
+	if err := whereByIDOrUUID(r.DB, c.Param("id"), schoolID).First(&book).Error(); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "book not found"})
 		return
 	}
 
 	r.DB.Delete(&book)
-
 	c.JSON(http.StatusNoContent, gin.H{"data": true})
 }

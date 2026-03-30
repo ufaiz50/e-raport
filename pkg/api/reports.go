@@ -156,19 +156,17 @@ func predicate(score float64) string {
 	}
 }
 
-// PrintReportCard godoc
 func (r *reportRepository) PrintReportCard(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {
 		return
 	}
 
-	studentIDResolved, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
+	studentID, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	studentID := int(studentIDResolved)
 
 	view, statusCode, err := r.buildReportView(studentID, c)
 	if err != nil {
@@ -192,12 +190,11 @@ func (r *reportRepository) PrintReportCardPDF(c *gin.Context) {
 		return
 	}
 
-	studentIDResolved, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
+	studentID, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	studentID := int(studentIDResolved)
 
 	view, statusCode, err := r.buildReportView(studentID, c)
 	if err != nil {
@@ -208,7 +205,7 @@ func (r *reportRepository) PrintReportCardPDF(c *gin.Context) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	r.renderStudentReportPDF(pdf, view)
 
-	filename := fmt.Sprintf("raport_%d_s%d_%s.pdf", studentID, view.Semester, view.AcademicYear)
+	filename := fmt.Sprintf("raport_%s_s%d_%s.pdf", studentID, view.Semester, view.AcademicYear)
 	c.Header("Content-Type", "application/pdf")
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
 	_ = pdf.Output(c.Writer)
@@ -220,12 +217,11 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 		return
 	}
 
-	classIDResolved, err := resolveClassID(r.DB, schoolID, c.Param("class_id"))
+	classID, err := resolveClassID(r.DB, schoolID, c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	classID := int(classIDResolved)
 
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
@@ -243,7 +239,7 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 	if role != "super_admin" {
 		query = query.Where("school_id = ?", *schoolID)
 	}
-	if err := query.Order("name asc").Find(&students).Error; err != nil || len(students) == 0 {
+	if err := query.Order("first_name asc, last_name asc").Find(&students).Error; err != nil || len(students) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class students not found"})
 		return
 	}
@@ -251,17 +247,17 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	for _, s := range students {
 		clone := *c
-		clone.Params = append(clone.Params[:0], gin.Param{Key: "student_id", Value: fmt.Sprintf("%d", s.ID)})
+		clone.Params = append(clone.Params[:0], gin.Param{Key: "student_id", Value: s.ID})
 		clone.Request = c.Request
 		clone.Request.URL.RawQuery = fmt.Sprintf("semester=%d&academic_year=%s", semester, academicYear)
-		view, _, err := r.buildReportView(int(s.ID), &clone)
+		view, _, err := r.buildReportView(s.ID, &clone)
 		if err != nil {
 			continue
 		}
 		r.renderStudentReportPDF(pdf, view)
 	}
 
-	filename := fmt.Sprintf("raport_kelas_%d_s%d_%s.pdf", classID, semester, academicYear)
+	filename := fmt.Sprintf("raport_kelas_%s_s%d_%s.pdf", classID, semester, academicYear)
 	c.Header("Content-Type", "application/pdf")
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
 	_ = pdf.Output(c.Writer)
@@ -273,12 +269,11 @@ func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
 		return
 	}
 
-	studentIDResolved, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
+	studentID, err := resolveStudentID(r.DB, schoolID, c.Param("student_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	studentID := int(studentIDResolved)
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -302,7 +297,7 @@ func (r *reportRepository) FinalizeReportCard(c *gin.Context) {
 	if err := r.DB.Where("school_id = ? AND student_id = ? AND semester = ? AND academic_year = ?", *schoolID, studentID, semester, academicYear).First(&reportCard).Error(); err != nil {
 		reportCard = models.ReportCard{
 			SchoolID:     schoolID,
-			StudentID:    uint(studentID),
+			StudentID:    studentID,
 			Semester:     semester,
 			AcademicYear: academicYear,
 			Status:       models.ReportCardFinalized,
@@ -323,12 +318,11 @@ func (r *reportRepository) FinalizeReportCardsByClass(c *gin.Context) {
 		return
 	}
 
-	classIDResolved, err := resolveClassID(r.DB, schoolID, c.Param("class_id"))
+	classID, err := resolveClassID(r.DB, schoolID, c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	classID := int(classIDResolved)
 	semester, err := parseRequiredInt(c, "semester")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -434,7 +428,7 @@ func (r *reportRepository) renderStudentReportPDF(pdf *gofpdf.Fpdf, view reportV
 	}
 }
 
-func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (reportView, int, error) {
+func (r *reportRepository) buildReportView(studentID string, c *gin.Context) (reportView, int, error) {
 	schoolID, role, ok := requireTenant(c)
 	if !ok {
 		return reportView{}, http.StatusUnauthorized, fmt.Errorf("missing school context")
@@ -489,7 +483,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	rows := make([]reportRow, 0, len(grades))
 	var total float64
 	for i, g := range grades {
-		subject := fmt.Sprintf("Mapel #%d", g.BookID)
+		subject := fmt.Sprintf("Mapel %s", g.BookID)
 		var book models.Book
 		bookQuery := r.DB.Where("id = ?", g.BookID)
 		if role != "super_admin" {
@@ -505,7 +499,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 
 	rank := 1
 	if student.ClassID != nil {
-		rank = r.computeRank(*student.ClassID, uint(studentID), semester, academicYear, schoolID, role)
+		rank = r.computeRank(*student.ClassID, studentID, semester, academicYear, schoolID, role)
 	}
 
 	reportStatus := string(models.ReportCardDraft)
@@ -523,7 +517,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}
 
 	school := models.School{Name: "E-Raport Internal School"}
-	schoolQuery := r.DB.Order("id asc")
+	schoolQuery := r.DB.Order("created_at asc")
 	if role != "super_admin" {
 		schoolQuery = schoolQuery.Where("id = ?", *schoolID)
 	}
@@ -543,7 +537,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}
 	_ = noteQuery.First(&note).Error()
 
-	verificationID := fmt.Sprintf("ERAPORT-%d-%d-%s", studentID, semester, academicYear)
+	verificationID := fmt.Sprintf("ERAPORT-%s-%d-%s", studentID, semester, academicYear)
 
 	return reportView{
 		SchoolName:     school.Name,
@@ -570,7 +564,7 @@ func (r *reportRepository) buildReportView(studentID int, c *gin.Context) (repor
 	}, http.StatusOK, nil
 }
 
-func (r *reportRepository) computeRank(classID uint, studentID uint, semester int, academicYear string, schoolID *uint, role string) int {
+func (r *reportRepository) computeRank(classID string, studentID string, semester int, academicYear string, schoolID *string, role string) int {
 	var students []models.Student
 	query := r.DB.Where("class_id = ?", classID)
 	if role != "super_admin" && schoolID != nil {
@@ -578,7 +572,7 @@ func (r *reportRepository) computeRank(classID uint, studentID uint, semester in
 	}
 	query.Find(&students)
 	type score struct {
-		studentID uint
+		studentID string
 		avg       float64
 	}
 	list := make([]score, 0, len(students))

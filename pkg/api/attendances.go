@@ -50,7 +50,7 @@ func (r *attendanceRepository) FindAttendances(c *gin.Context) {
 		return
 	}
 
-	query.Offset(offset).Limit(limit).Order("id desc").Find(&attendances)
+	query.Offset(offset).Limit(limit).Order("created_at desc").Find(&attendances)
 	c.JSON(http.StatusOK, gin.H{
 		"data": attendances,
 		"meta": gin.H{

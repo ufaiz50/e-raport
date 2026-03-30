@@ -7,20 +7,19 @@ import (
 )
 
 type Grade struct {
-	PublicUUID
-	ID             uint               `json:"id" gorm:"primary_key"`
-	SchoolID       *uint              `json:"school_id,omitempty" gorm:"index"`
-	School         *School            `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	SemesterID     *uint              `json:"semester_id,omitempty" gorm:"index"`
-	SemesterRef    *Semester          `json:"semester_ref,omitempty" gorm:"foreignKey:SemesterID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	TeachingID     *uint              `json:"teaching_id,omitempty" gorm:"index"`
-	Teaching       *Teaching          `json:"teaching,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	EnrollmentID   *uint              `json:"enrollment_id,omitempty" gorm:"index"`
-	Enrollment     *StudentEnrollment `json:"enrollment,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	StudentID      uint               `json:"student_id"`
-	Student        Student            `json:"student" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	BookID         uint               `json:"book_id"`
-	Book           Book               `json:"book" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	UUIDPrimaryKey
+	SchoolID       *string            `json:"school_id,omitempty" gorm:"type:uuid;index"`
+	School         *School            `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:SchoolID;references:ID"`
+	SemesterID     *string            `json:"semester_id,omitempty" gorm:"type:uuid;index"`
+	SemesterRef    *Semester          `json:"semester_ref,omitempty" gorm:"foreignKey:SemesterID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	TeachingID     *string            `json:"teaching_id,omitempty" gorm:"type:uuid;index"`
+	Teaching       *Teaching          `json:"teaching,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:TeachingID;references:ID"`
+	EnrollmentID   *string            `json:"enrollment_id,omitempty" gorm:"type:uuid;index"`
+	Enrollment     *StudentEnrollment `json:"enrollment,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:EnrollmentID;references:ID"`
+	StudentID      string             `json:"student_id" gorm:"type:uuid"`
+	Student        Student            `json:"student" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StudentID;references:ID"`
+	BookID         string             `json:"book_id" gorm:"type:uuid"`
+	Book           Book               `json:"book" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:BookID;references:ID"`
 	Semester       int                `json:"semester" gorm:"not null"`
 	AcademicYear   string             `json:"academic_year" gorm:"type:varchar(20);not null"`
 	KnowledgeScore float64            `json:"knowledge_score" gorm:"type:numeric(5,2);not null"`
@@ -31,27 +30,27 @@ type Grade struct {
 	UpdatedAt      time.Time          `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (g *Grade) BeforeCreate(_ *gorm.DB) error { g.UUID = ensureUUID(g.UUID); return nil }
+func (g *Grade) BeforeCreate(_ *gorm.DB) error { g.ID = ensureUUID(g.ID); return nil }
 
 type CreateGrade struct {
-	SchoolID       *uint   `json:"school_id"`
-	SemesterID     *uint   `json:"semester_id"`
-	TeachingID     *uint   `json:"teaching_id"`
-	EnrollmentID   *uint   `json:"enrollment_id"`
-	StudentID      uint    `json:"student_id" binding:"required"`
-	BookID         uint    `json:"book_id" binding:"required"`
-	Semester       int     `json:"semester" binding:"required,min=1,max=2"`
-	AcademicYear   string  `json:"academic_year" binding:"required"`
-	KnowledgeScore float64 `json:"knowledge_score" binding:"required,gte=0,lte=100"`
-	SkillScore     float64 `json:"skill_score" binding:"required,gte=0,lte=100"`
-	Notes          string  `json:"notes"`
+	SchoolID       *string  `json:"school_id"`
+	SemesterID     *string  `json:"semester_id"`
+	TeachingID     *string  `json:"teaching_id"`
+	EnrollmentID   *string  `json:"enrollment_id"`
+	StudentID      string   `json:"student_id" binding:"required"`
+	BookID         string   `json:"book_id" binding:"required"`
+	Semester       int      `json:"semester" binding:"required,min=1,max=2"`
+	AcademicYear   string   `json:"academic_year" binding:"required"`
+	KnowledgeScore float64  `json:"knowledge_score" binding:"required,gte=0,lte=100"`
+	SkillScore     float64  `json:"skill_score" binding:"required,gte=0,lte=100"`
+	Notes          string   `json:"notes"`
 }
 
 type UpdateGrade struct {
-	SchoolID       *uint    `json:"school_id"`
-	SemesterID     *uint    `json:"semester_id"`
-	TeachingID     *uint    `json:"teaching_id"`
-	EnrollmentID   *uint    `json:"enrollment_id"`
+	SchoolID       *string  `json:"school_id"`
+	SemesterID     *string  `json:"semester_id"`
+	TeachingID     *string  `json:"teaching_id"`
+	EnrollmentID   *string  `json:"enrollment_id"`
 	KnowledgeScore *float64 `json:"knowledge_score" binding:"omitempty,gte=0,lte=100"`
 	SkillScore     *float64 `json:"skill_score" binding:"omitempty,gte=0,lte=100"`
 	Notes          *string  `json:"notes"`

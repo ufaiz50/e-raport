@@ -47,6 +47,11 @@ func JWTAuth() gin.HandlerFunc {
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
 		c.Set("school_id", claims.SchoolID)
+		c.Set("user", map[string]any{
+			"username": claims.Username,
+			"role": claims.Role,
+			"school_id": claims.SchoolID,
+		})
 		c.Next()
 	}
 }

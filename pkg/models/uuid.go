@@ -2,8 +2,8 @@ package models
 
 import "github.com/google/uuid"
 
-type PublicUUID struct {
-	UUID string `json:"uuid" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex"`
+type UUIDPrimaryKey struct {
+	ID string `json:"id" gorm:"type:uuid;primaryKey"`
 }
 
 func ensureUUID(current string) string {

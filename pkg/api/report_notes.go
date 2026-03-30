@@ -50,7 +50,7 @@ func (r *reportNoteRepository) FindReportNotes(c *gin.Context) {
 		return
 	}
 
-	query.Offset(offset).Limit(limit).Order("id desc").Find(&notes)
+	query.Offset(offset).Limit(limit).Order("created_at desc").Find(&notes)
 	c.JSON(http.StatusOK, gin.H{
 		"data": notes,
 		"meta": gin.H{

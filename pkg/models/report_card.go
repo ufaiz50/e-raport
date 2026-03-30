@@ -14,11 +14,10 @@ const (
 )
 
 type ReportCard struct {
-	PublicUUID
-	ID           uint             `json:"id" gorm:"primary_key"`
-	SchoolID     *uint            `json:"school_id,omitempty" gorm:"index:idx_report_term_student_school,unique"`
-	School       *School          `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	StudentID    uint             `json:"student_id" gorm:"index:idx_report_term_student_school,unique"`
+	UUIDPrimaryKey
+	SchoolID     *string          `json:"school_id,omitempty" gorm:"type:uuid;index:idx_report_term_student_school,unique"`
+	School       *School          `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:SchoolID;references:ID"`
+	StudentID    string           `json:"student_id" gorm:"type:uuid;index:idx_report_term_student_school,unique"`
 	Semester     int              `json:"semester" gorm:"index:idx_report_term_student_school,unique"`
 	AcademicYear string           `json:"academic_year" gorm:"type:varchar(20);index:idx_report_term_student_school,unique"`
 	Status       ReportCardStatus `json:"status" gorm:"type:varchar(20);not null;default:draft"`
@@ -27,4 +26,4 @@ type ReportCard struct {
 	UpdatedAt    time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (r *ReportCard) BeforeCreate(_ *gorm.DB) error { r.UUID = ensureUUID(r.UUID); return nil }
+func (r *ReportCard) BeforeCreate(_ *gorm.DB) error { r.ID = ensureUUID(r.ID); return nil }

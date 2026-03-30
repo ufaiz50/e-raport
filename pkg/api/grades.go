@@ -25,7 +25,7 @@ type gradeRepository struct {
 
 type gradeResponse struct {
 	models.Grade
-	SubjectID   uint   `json:"subject_id"`
+	SubjectID   string `json:"subject_id"`
 	SubjectName string `json:"subject_name,omitempty"`
 }
 
@@ -37,8 +37,8 @@ func computeFinalScore(knowledge, skill float64) float64 {
 	return (knowledge * 0.6) + (skill * 0.4)
 }
 
-func resolveTermBySemesterID(r *gradeRepository, schoolID *uint, semesterID *uint) (*models.Semester, *models.AcademicYear, error) {
-	if semesterID == nil {
+func resolveTermBySemesterID(r *gradeRepository, schoolID *string, semesterID *string) (*models.Semester, *models.AcademicYear, error) {
+	if semesterID == nil || *semesterID == "" {
 		return nil, nil, nil
 	}
 	var sem models.Semester
@@ -52,19 +52,6 @@ func resolveTermBySemesterID(r *gradeRepository, schoolID *uint, semesterID *uin
 	return &sem, &ay, nil
 }
 
-// FindGrades godoc
-// @Summary Get grades
-// @Description Get grade list with optional filters: student_id, semester, academic_year
-// @Tags grades
-// @Security ApiKeyAuth
-// @Produce json
-// @Param offset query int false "Offset for pagination" default(0)
-// @Param limit query int false "Limit for pagination" default(10)
-// @Param student_id query int false "Student ID"
-// @Param semester query int false "Semester"
-// @Param academic_year query string false "Academic year"
-// @Success 200 {array} models.Grade "Successfully retrieved list of grades"
-// @Router /grades [get]
 func (r *gradeRepository) FindGrades(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {
@@ -88,9 +75,6 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 			return
 		}
 		query = query.Where("student_id = ?", resolvedStudentID)
-	}
-	if uuid := c.Query("uuid"); uuid != "" {
-		query = query.Where("uuid = ?", uuid)
 	}
 	if semester := c.Query("semester"); semester != "" {
 		query = query.Where("semester = ?", semester)
@@ -132,18 +116,6 @@ func (r *gradeRepository) FindGrades(c *gin.Context) {
 	})
 }
 
-// CreateGrade godoc
-// @Summary Create a grade
-// @Description Create grade for a student and subject(book)
-// @Tags grades
-// @Security ApiKeyAuth
-// @Security JwtAuth
-// @Accept json
-// @Produce json
-// @Param input body models.CreateGrade true "Create grade object"
-// @Success 201 {object} models.Grade "Successfully created grade"
-// @Failure 400 {string} string "Bad Request"
-// @Router /grades [post]
 func (r *gradeRepository) CreateGrade(c *gin.Context) {
 	var input models.CreateGrade
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -219,16 +191,6 @@ func (r *gradeRepository) CreateGrade(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": grade})
 }
 
-// UpdateGrade godoc
-// @Summary Update grade by ID
-// @Tags grades
-// @Security ApiKeyAuth
-// @Accept json
-// @Produce json
-// @Param id path string true "Grade ID"
-// @Param input body models.UpdateGrade true "Update grade object"
-// @Success 200 {object} models.Grade "Successfully updated grade"
-// @Router /grades/{id} [put]
 func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	var input models.UpdateGrade
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -302,14 +264,6 @@ func (r *gradeRepository) UpdateGrade(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": grade})
 }
 
-// DeleteGrade godoc
-// @Summary Delete grade by ID
-// @Tags grades
-// @Security ApiKeyAuth
-// @Produce json
-// @Param id path string true "Grade ID"
-// @Success 204 {string} string "Successfully deleted grade"
-// @Router /grades/{id} [delete]
 func (r *gradeRepository) DeleteGrade(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {

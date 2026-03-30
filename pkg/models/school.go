@@ -7,8 +7,7 @@ import (
 )
 
 type School struct {
-	PublicUUID
-	ID             uint      `json:"id" gorm:"primary_key"`
+	UUIDPrimaryKey
 	Name           string    `json:"name" gorm:"uniqueIndex;not null"`
 	Code           string    `json:"code" gorm:"uniqueIndex;not null"`
 	Address        string    `json:"address"`
@@ -21,4 +20,4 @@ type School struct {
 	UpdatedAt      time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (s *School) BeforeCreate(_ *gorm.DB) error { s.UUID = ensureUUID(s.UUID); return nil }
+func (s *School) BeforeCreate(_ *gorm.DB) error { s.ID = ensureUUID(s.ID); return nil }

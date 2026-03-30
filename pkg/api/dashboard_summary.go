@@ -26,13 +26,13 @@ type dashboardSummaryResponse struct {
 }
 
 type dashboardTotals struct {
-	Students    int64 `json:"students"`
-	Classes     int64 `json:"classes"`
-	Grades      int64 `json:"grades"`
-	Attendances int64 `json:"attendances"`
-	ReportNotes int64 `json:"report_notes"`
+	Students               int64 `json:"students"`
+	Classes                int64 `json:"classes"`
+	Grades                 int64 `json:"grades"`
+	Attendances            int64 `json:"attendances"`
+	ReportNotes            int64 `json:"report_notes"`
 	SubjectsWithoutTeacher int64 `json:"subjects_without_teacher"`
-	IncompleteStudents int64 `json:"incomplete_students"`
+	IncompleteStudents     int64 `json:"incomplete_students"`
 }
 
 type semesterTrendItem struct {
@@ -43,7 +43,7 @@ type semesterTrendItem struct {
 }
 
 type classCompletenessItem struct {
-	ClassID         uint   `json:"class_id"`
+	ClassID         string `json:"class_id"`
 	ClassName       string `json:"class_name"`
 	Level           string `json:"level"`
 	TotalStudents   int    `json:"total_students"`
@@ -84,35 +84,35 @@ func (r *dashboardRepository) Summary(c *gin.Context) {
 	subjectsWithoutTeacherCount.Count(&resp.Totals.SubjectsWithoutTeacher)
 
 	var students []models.Student
-	studentQuery := r.DB.Order("id asc")
+	studentQuery := r.DB.Order("created_at asc")
 	if schoolID != nil {
 		studentQuery = studentQuery.Where("school_id = ?", *schoolID)
 	}
 	studentQuery.Find(&students)
 
 	var classes []models.Class
-	classQuery := r.DB.Order("id asc")
+	classQuery := r.DB.Order("created_at asc")
 	if schoolID != nil {
 		classQuery = classQuery.Where("school_id = ?", *schoolID)
 	}
 	classQuery.Find(&classes)
 
 	var grades []models.Grade
-	gradeQuery := r.DB.Order("id asc")
+	gradeQuery := r.DB.Order("created_at asc")
 	if schoolID != nil {
 		gradeQuery = gradeQuery.Where("school_id = ?", *schoolID)
 	}
 	gradeQuery.Find(&grades)
 
 	var attendances []models.Attendance
-	attendanceQuery := r.DB.Order("id asc")
+	attendanceQuery := r.DB.Order("created_at asc")
 	if schoolID != nil {
 		attendanceQuery = attendanceQuery.Where("school_id = ?", *schoolID)
 	}
 	attendanceQuery.Find(&attendances)
 
 	var notes []models.ReportNote
-	noteQuery := r.DB.Order("id asc")
+	noteQuery := r.DB.Order("created_at asc")
 	if schoolID != nil {
 		noteQuery = noteQuery.Where("school_id = ?", *schoolID)
 	}
@@ -167,15 +167,15 @@ func buildSemesterTrends(grades []models.Grade) []semesterTrendItem {
 }
 
 func buildClassCompleteness(classes []models.Class, students []models.Student, grades []models.Grade, attendances []models.Attendance, notes []models.ReportNote) []classCompletenessItem {
-	gradeStudent := map[uint]bool{}
+	gradeStudent := map[string]bool{}
 	for _, g := range grades {
 		gradeStudent[g.StudentID] = true
 	}
-	attendanceStudent := map[uint]bool{}
+	attendanceStudent := map[string]bool{}
 	for _, a := range attendances {
 		attendanceStudent[a.StudentID] = true
 	}
-	noteStudent := map[uint]bool{}
+	noteStudent := map[string]bool{}
 	for _, n := range notes {
 		noteStudent[n.StudentID] = true
 	}
@@ -266,12 +266,18 @@ func buildRecommendations(t dashboardTotals, classes []classCompletenessItem) []
 }
 
 func countIncompleteStudents(students []models.Student, grades []models.Grade, attendances []models.Attendance, notes []models.ReportNote) int64 {
-	gradeStudent := map[uint]bool{}
-	for _, g := range grades { gradeStudent[g.StudentID] = true }
-	attendanceStudent := map[uint]bool{}
-	for _, a := range attendances { attendanceStudent[a.StudentID] = true }
-	noteStudent := map[uint]bool{}
-	for _, n := range notes { noteStudent[n.StudentID] = true }
+	gradeStudent := map[string]bool{}
+	for _, g := range grades {
+		gradeStudent[g.StudentID] = true
+	}
+	attendanceStudent := map[string]bool{}
+	for _, a := range attendances {
+		attendanceStudent[a.StudentID] = true
+	}
+	noteStudent := map[string]bool{}
+	for _, n := range notes {
+		noteStudent[n.StudentID] = true
+	}
 	var total int64
 	for _, s := range students {
 		if !gradeStudent[s.ID] || !attendanceStudent[s.ID] || !noteStudent[s.ID] {
