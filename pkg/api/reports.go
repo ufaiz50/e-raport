@@ -84,7 +84,7 @@ var reportTemplate = template.Must(template.New("report_card").Parse(`<!doctype 
 
   <div class="info">
     <p><strong>Nama:</strong> {{.StudentName}}</p>
-    <p><strong>Email:</strong> {{.StudentEmail}}</p>
+    {{if .StudentEmail}}<p><strong>Email:</strong> {{.StudentEmail}}</p>{{end}}
     <p><strong>Kelas:</strong> {{.ClassName}}</p>
     <p><strong>Jenjang:</strong> {{.StudentType}}</p>
     <p><strong>Semester/Tahun Ajaran:</strong> {{.Semester}} / {{.AcademicYear}}</p>
@@ -239,7 +239,7 @@ func (r *reportRepository) PrintReportCardClassPDF(c *gin.Context) {
 	if role != "super_admin" {
 		query = query.Where("school_id = ?", *schoolID)
 	}
-	if err := query.Order("first_name asc, last_name asc").Find(&students).Error; err != nil || len(students) == 0 {
+	if err := query.Order("nama asc, created_at asc").Find(&students).Error; err != nil || len(students) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "class students not found"})
 		return
 	}
@@ -544,7 +544,7 @@ func (r *reportRepository) buildReportView(studentID string, c *gin.Context) (re
 		SchoolAddress:  school.Address,
 		SchoolNPSN:     school.NPSN,
 		PrincipalName:  school.PrincipalName,
-		StudentName:    student.FirstName + " " + student.LastName,
+		StudentName:    studentDisplayName(student),
 		StudentEmail:   student.Email,
 		StudentType:    student.Type,
 		ClassName:      className,
@@ -570,7 +570,7 @@ func (r *reportRepository) computeRank(classID string, studentID string, semeste
 	if role != "super_admin" && schoolID != nil {
 		query = query.Where("school_id = ?", *schoolID)
 	}
-	query.Find(&students)
+	query.Order("nama asc, created_at asc").Find(&students)
 	type score struct {
 		studentID string
 		avg       float64

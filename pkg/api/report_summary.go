@@ -48,6 +48,22 @@ type reportSummaryResponse struct {
 	Students     []reportSummaryStudentItem `json:"students"`
 }
 
+func studentDisplayName(s models.Student) string {
+	if s.Nama != "" {
+		return s.Nama
+	}
+	if s.NamaPanggilan != "" {
+		return s.NamaPanggilan
+	}
+	if s.Email != "" {
+		return s.Email
+	}
+	if s.NIS != "" {
+		return s.NIS
+	}
+	return "Siswa"
+}
+
 func (r *reportSummaryRepository) Summary(c *gin.Context) {
 	schoolID, _, ok := requireTenant(c)
 	if !ok {
@@ -120,10 +136,7 @@ func (r *reportSummaryRepository) Summary(c *gin.Context) {
 	for _, e := range enrollments {
 		s := studentMap[e.StudentID]
 		cls := classMap[e.ClassID]
-		studentName := (s.FirstName + " " + s.LastName)
-		if studentName == " " || studentName == "" {
-			studentName = s.Email
-		}
+		studentName := studentDisplayName(s)
 		hasGrades := gradeStudent[e.StudentID]
 		hasAttendance := attendanceStudent[e.StudentID]
 		hasNote := noteStudent[e.StudentID]
