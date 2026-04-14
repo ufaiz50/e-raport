@@ -78,6 +78,7 @@ func NewRouter(logger *zap.Logger, mongoCollection *mongo.Collection, db databas
 
 		v1.GET("/grades", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.FindGrades)
 		v1.POST("/grades", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.CreateGrade)
+		v1.POST("/grades/generate", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.GenerateGrades)
 		v1.PUT("/grades/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.UpdateGrade)
 		v1.DELETE("/grades/:id", middleware.APIKeyAuth(), middleware.JWTAuth(), gradeRepository.DeleteGrade)
 

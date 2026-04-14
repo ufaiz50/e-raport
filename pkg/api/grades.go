@@ -16,6 +16,7 @@ type GradeRepository interface {
 	CreateGrade(c *gin.Context)
 	UpdateGrade(c *gin.Context)
 	DeleteGrade(c *gin.Context)
+	GenerateGrades(c *gin.Context)
 }
 
 type gradeRepository struct {
@@ -278,6 +279,140 @@ func (r *gradeRepository) DeleteGrade(c *gin.Context) {
 
 	r.DB.Delete(&grade)
 	c.JSON(http.StatusNoContent, gin.H{"data": true})
+}
+
+type GenerateGradesInput struct {
+	ClassID    string  `json:"class_id" binding:"required"`
+	SemesterID string  `json:"semester_id" binding:"required"`
+	SchoolID   *string `json:"school_id"`
+}
+
+func (r *gradeRepository) GenerateGrades(c *gin.Context) {
+	var input GenerateGradesInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	schoolID, _, ok := resolveWriteSchoolID(c, input.SchoolID)
+	if !ok {
+		return
+	}
+
+	// 1. Resolve semester → academic_year + order_no
+	var sem models.Semester
+	if err := r.DB.Where("id = ? AND school_id = ?", input.SemesterID, *schoolID).First(&sem).Error(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "semester not found"})
+		return
+	}
+	var ay models.AcademicYear
+	if err := r.DB.Where("id = ? AND school_id = ?", sem.AcademicYearID, *schoolID).First(&ay).Error(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "academic year not found"})
+		return
+	}
+	academicYear := ay.Year
+	semesterNo := sem.OrderNo
+
+	// 2. Resolve class → get curriculum_id
+	var class models.Class
+	if err := r.DB.Where("id = ? AND school_id = ?", input.ClassID, *schoolID).First(&class).Error(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "class not found"})
+		return
+	}
+	if class.CurriculumID == nil || *class.CurriculumID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "class has no curriculum assigned"})
+		return
+	}
+
+	// 3. Get subjects from curriculum_subjects (book_ids linked to curriculum)
+	var currSubjects []models.CurriculumSubject
+	r.DB.Where("curriculum_id = ?", *class.CurriculumID).Find(&currSubjects)
+	if len(currSubjects) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no subjects linked to curriculum"})
+		return
+	}
+	subjectIDs := make([]string, 0, len(currSubjects))
+	for _, cs := range currSubjects {
+		subjectIDs = append(subjectIDs, cs.SubjectID)
+	}
+
+	// 4. Get enrolled students for this class + term
+	var enrollments []models.StudentEnrollment
+	r.DB.Where("school_id = ? AND class_id = ? AND academic_year = ? AND semester = ?",
+		*schoolID, input.ClassID, academicYear, semesterNo).Find(&enrollments)
+	if len(enrollments) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no students enrolled in this class for the selected term"})
+		return
+	}
+	studentIDs := make([]string, 0, len(enrollments))
+	enrollmentMap := map[string]string{} // studentID → enrollmentID
+	for _, e := range enrollments {
+		studentIDs = append(studentIDs, e.StudentID)
+		enrollmentMap[e.StudentID] = e.ID
+	}
+
+	// 5. Generate grades: student × subject (skip duplicates)
+	generatedCount := 0
+	skippedCount := 0
+
+	for _, studentID := range studentIDs {
+		for _, bookID := range subjectIDs {
+			// Check if grade already exists
+			var existing models.Grade
+			if err := r.DB.Where(
+				"school_id = ? AND student_id = ? AND book_id = ? AND semester = ? AND academic_year = ?",
+				*schoolID, studentID, bookID, semesterNo, academicYear,
+			).First(&existing).Error(); err == nil {
+				skippedCount++
+				continue
+			}
+
+			enrollmentID := enrollmentMap[studentID]
+			grade := models.Grade{
+				SchoolID:       schoolID,
+				SemesterID:     &input.SemesterID,
+				EnrollmentID:   &enrollmentID,
+				StudentID:      studentID,
+				BookID:         bookID,
+				Semester:       semesterNo,
+				AcademicYear:   academicYear,
+				KnowledgeScore: 0,
+				SkillScore:     0,
+				FinalScore:     0,
+			}
+			if err := r.DB.Create(&grade).Error; err != nil {
+				continue
+			}
+			generatedCount++
+		}
+	}
+
+	// Build response summaries
+	studentNames := make([]gin.H, 0, len(studentIDs))
+	for _, sid := range studentIDs {
+		var s models.Student
+		if err := r.DB.Where("id = ?", sid).First(&s).Error(); err == nil {
+			studentNames = append(studentNames, gin.H{"id": s.ID, "nama": s.Nama})
+		}
+	}
+	subjectNames := make([]gin.H, 0, len(subjectIDs))
+	for _, bid := range subjectIDs {
+		var b models.Book
+		if err := r.DB.Where("id = ?", bid).First(&b).Error(); err == nil {
+			subjectNames = append(subjectNames, gin.H{"id": b.ID, "name": b.Title})
+		}
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"data": gin.H{
+			"generated_count": generatedCount,
+			"skipped_count":   skippedCount,
+			"students":        studentNames,
+			"subjects":        subjectNames,
+			"academic_year":   academicYear,
+			"semester":        semesterNo,
+		},
+	})
 }
 
 func parseRequiredInt(c *gin.Context, key string) (int, error) {

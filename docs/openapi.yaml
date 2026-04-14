@@ -438,6 +438,48 @@ paths:
           schema: { $ref: '#/definitions/models.CreateGrade' }
       responses: { '201': { description: Created } }
 
+  /grades/generate:
+    post:
+      tags: [grades]
+      security: [{ ApiKeyAuth: [] }, { JwtAuth: [] }]
+      summary: Auto-generate grade forms for a class (students × subjects from curriculum)
+      description: |
+        Generate grade rows for all enrolled students in a class, crossed with all subjects
+        linked to the class's curriculum. Grades are initialized with 0 scores.
+        Existing grades are skipped (idempotent).
+      parameters:
+        - in: body
+          name: input
+          required: true
+          schema: { $ref: '#/definitions/models.GenerateGradesInput' }
+      responses:
+        '201':
+          description: Grades generated
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  generated_count: { type: integer }
+                  skipped_count: { type: integer }
+                  students:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        nama: { type: string }
+                  subjects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                  academic_year: { type: string }
+                  semester: { type: integer }
+
   /grades/{id}:
     put:
       tags: [grades]
@@ -842,48 +884,82 @@ definitions:
 
   models.CreateStudent:
     type: object
-    required: [first_name, last_name, email, class_id]
+    required: [nama]
     properties:
-      first_name: { type: string }
-      last_name: { type: string }
+      nama: { type: string, description: Student full name (required) }
+      nama_panggilan: { type: string }
       email: { type: string }
       nis: { type: string }
       nisn: { type: string }
-      gender: { type: string }
-      birth_place: { type: string }
-      birth_date: { type: string, format: date-time }
-      address: { type: string }
-      phone: { type: string }
-      religion: { type: string }
-      parent_name: { type: string }
-      parent_phone: { type: string }
+      jenis_kelamin: { type: string }
+      tempat_lahir: { type: string }
+      tanggal_lahir: { type: string, format: date-time }
+      agama: { type: string }
+      anak_ke: { type: integer }
+      nama_ayah: { type: string }
+      pekerjaan_ayah: { type: string }
+      nama_ibu: { type: string }
+      pekerjaan_ibu: { type: string }
+      no_hp_orangtua: { type: string }
+      alamat_orangtua_jalan: { type: string }
+      alamat_orangtua_kecamatan: { type: string }
+      alamat_orangtua_kabupaten: { type: string }
+      alamat_orangtua_provinsi: { type: string }
+      nama_wali: { type: string }
+      pekerjaan_wali: { type: string }
+      no_hp_wali: { type: string }
+      alamat_wali_jalan: { type: string }
+      alamat_wali_kecamatan: { type: string }
+      alamat_wali_kabupaten: { type: string }
+      alamat_wali_provinsi: { type: string }
+      tanggal_diterima: { type: string, format: date-time }
+      catatan_guru: { type: string }
       status: { type: string }
       school_id:
-        type: integer
+        type: string
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
-      class_id: { type: integer }
+      class_id:
+        type: string
+        description: Optional — student is master data, class assignment done via enrollment
 
   models.UpdateStudent:
     type: object
     properties:
-      first_name: { type: string }
-      last_name: { type: string }
+      nama: { type: string }
+      nama_panggilan: { type: string }
       email: { type: string }
       nis: { type: string }
       nisn: { type: string }
-      gender: { type: string }
-      birth_place: { type: string }
-      birth_date: { type: string, format: date-time }
-      address: { type: string }
-      phone: { type: string }
-      religion: { type: string }
-      parent_name: { type: string }
-      parent_phone: { type: string }
+      jenis_kelamin: { type: string }
+      tempat_lahir: { type: string }
+      tanggal_lahir: { type: string, format: date-time }
+      agama: { type: string }
+      anak_ke: { type: integer }
+      nama_ayah: { type: string }
+      pekerjaan_ayah: { type: string }
+      nama_ibu: { type: string }
+      pekerjaan_ibu: { type: string }
+      no_hp_orangtua: { type: string }
+      alamat_orangtua_jalan: { type: string }
+      alamat_orangtua_kecamatan: { type: string }
+      alamat_orangtua_kabupaten: { type: string }
+      alamat_orangtua_provinsi: { type: string }
+      nama_wali: { type: string }
+      pekerjaan_wali: { type: string }
+      no_hp_wali: { type: string }
+      alamat_wali_jalan: { type: string }
+      alamat_wali_kecamatan: { type: string }
+      alamat_wali_kabupaten: { type: string }
+      alamat_wali_provinsi: { type: string }
+      tanggal_diterima: { type: string, format: date-time }
+      catatan_guru: { type: string }
       status: { type: string }
       school_id:
-        type: integer
+        type: string
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
-      class_id: { type: integer }
+      class_id:
+        type: string
+        description: Optional — student is master data, class assignment done via enrollment
 
   models.StudentEnrollment:
     type: object
@@ -920,8 +996,11 @@ definitions:
       homeroom: { type: string }
       academic_year: { type: string }
       school_id:
-        type: integer
+        type: string
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      curriculum_id:
+        type: string
+        description: UUID of curriculum to link with this class (optional)
 
   models.UpdateClass:
     type: object
@@ -931,7 +1010,24 @@ definitions:
       homeroom: { type: string }
       academic_year: { type: string }
       school_id:
-        type: integer
+        type: string
+        description: Required for super_admin write requests. Must be omitted for non-super_admin.
+      curriculum_id:
+        type: string
+        description: UUID of curriculum to link with this class (optional)
+
+  models.GenerateGradesInput:
+    type: object
+    required: [class_id, semester_id]
+    properties:
+      class_id:
+        type: string
+        description: UUID of the class to generate grades for
+      semester_id:
+        type: string
+        description: UUID of the semester (resolves to academic_year + semester number)
+      school_id:
+        type: string
         description: Required for super_admin write requests. Must be omitted for non-super_admin.
 
   models.CreateGrade:

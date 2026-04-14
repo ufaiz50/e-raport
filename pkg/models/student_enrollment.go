@@ -10,9 +10,9 @@ type StudentEnrollment struct {
 	UUIDPrimaryKey
 	SchoolID     *string    `json:"school_id,omitempty" gorm:"type:uuid;index;not null"`
 	School       *School    `json:"school,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:SchoolID;references:ID"`
-	StudentID    string     `json:"student_id" gorm:"type:uuid;index;not null"`
+	StudentID    string     `json:"student_id" gorm:"type:uuid;index:idx_student_term,unique;not null"`
 	Student      *Student   `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StudentID;references:ID"`
-	ClassID      string     `json:"class_id" gorm:"type:uuid;index;not null"`
+	ClassID      string     `json:"class_id" gorm:"type:uuid;index:idx_student_term,unique;not null"`
 	Class        *Class     `json:"class,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:ClassID;references:ID"`
 	AcademicYear string     `json:"academic_year" gorm:"type:varchar(20);index:idx_student_term,unique;not null"`
 	Semester     int        `json:"semester" gorm:"index:idx_student_term,unique;not null"`

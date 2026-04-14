@@ -79,7 +79,7 @@ type CreateStudent struct {
 	CatatanGuru             string     `json:"catatan_guru"`
 	Status                  string     `json:"status"`
 	SchoolID                *string    `json:"school_id"`
-	ClassID                 *string    `json:"class_id" binding:"required"`
+	ClassID                 *string    `json:"class_id"`
 }
 
 type UpdateStudent struct {
@@ -113,5 +113,5 @@ type UpdateStudent struct {
 	CatatanGuru             string     `json:"catatan_guru"`
 	Status                  string     `json:"status"`
 	SchoolID                *string    `json:"school_id"`
-	ClassID                 *string    `json:"class_id" binding:"required"`
+	ClassID                 *string    `json:"class_id"`
 }
